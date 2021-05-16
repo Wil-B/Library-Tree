@@ -1,6 +1,6 @@
 # Library Tree
 
-<img src= "https://img.shields.io/github/v/release/Wil-b/Library-Tree?include_prereleases">[![CodeFactor](https://www.codefactor.io/repository/github/wil-b/smp-scripts/badge?s=e31aef34da666a7f881d60c035843654ee451e7d)](https://www.codefactor.io/repository/github/wil-b/smp-scripts)
+<!-- <img src= "https://img.shields.io/github/v/release/Wil-b/Library-Tree?include_prereleases">[![CodeFactor](https://www.codefactor.io/repository/github/wil-b/smp-scripts/badge?s=e31aef34da666a7f881d60c035843654ee451e7d)](https://www.codefactor.io/repository/github/wil-b/smp-scripts) -->
 
  Feature rich library viewer for foobar2000.
  
