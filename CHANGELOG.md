@@ -11,4 +11,4 @@
 ### Changed
 - Send to new playlist now checks playlist lock status
 - Smooth scroll: enhanced smoothness when using scrollbar
-- Refactored code (codefactor A)
+- Refactored code
