@@ -12,7 +12,7 @@
 <!-- ![2 pane beatles](https://user-images.githubusercontent.com/35600752/155882938-337d8559-2df6-4a8b-abed-87d95fe8d047.png) -->
 <!-- ![Composite1](https://user-images.githubusercontent.com/35600752/155882941-a8401155-f7bd-4119-b5e5-2ea5b8695ffe.png) -->
 
-Screenshot: two panel mode (artist images left; front covers right; dark theme; columns UI with splitter hidden):
+#### Screenshot: two panel mode (artist images left; front covers right; dark theme; columns UI with splitter hidden):
 
 ![2pane](https://user-images.githubusercontent.com/35600752/155884212-9bea1326-3430-46a4-a86e-3bc4b09e4dd4.png)
 <!-- ![singlecolumn](https://user-images.githubusercontent.com/35600752/155884609-e09023e0-15df-4051-aaa1-efa47cd9cdb3.png) -->
@@ -52,20 +52,18 @@ New install or update:
 
 <!-- ![single letter](https://user-images.githubusercontent.com/35600752/155882935-78e7e145-e33a-495c-8f14-dd23161566ae.png) -->
 
-Two panel mode (index left; front covers right; dark theme; columns UI with splitter hidden):
+#### Screenshot: Two panel mode (index left; front covers right; dark theme; columns UI with splitter hidden):
 
 ![lett](https://user-images.githubusercontent.com/35600752/155883811-6913f1dc-74c7-4e0e-b811-86fcd90f7260.png)
 
-Screenshot
-Upper panel: Flow mode
-Lower panels: left to right: classsical nodes; custom nodes & dark theme; modern nodes & blend theme; ultra-modern nodes & album art background:
+#### Screenshot: Upper panel: Flow mode | Lower panels: various node stylse with, left to right: user interface theme; dark theme; blend theme; album art background:
 
 ![CompositeRed](https://user-images.githubusercontent.com/35600752/155882945-a1b344e8-5a88-49b9-95b8-c87eb4cb3d74.png)
 
 <!-- ![CompositeRearless](https://user-images.githubusercontent.com/35600752/155882942-b18a7a24-60b4-4b33-b2f3-b86a1dff4ff2.png) -->
 <!-- ![2 pane beatles](https://user-images.githubusercontent.com/35600752/155882938-337d8559-2df6-4a8b-abed-87d95fe8d047.png) -->
 
-Screenshot: album art background + jump search
+#### Screenshot: album art background + jump search
 
 ![T_Rex](https://user-images.githubusercontent.com/35600752/118255885-b5a41e00-b4a4-11eb-8f19-7a24e5215463.png)
 
