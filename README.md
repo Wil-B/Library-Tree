@@ -35,7 +35,7 @@ New install or update:
 ![lett](https://user-images.githubusercontent.com/35600752/155883811-6913f1dc-74c7-4e0e-b811-86fcd90f7260.png)
 
 #### Screenshot: Upper panel: Flow mode | Lower panels: various node stylse with, left to right: user interface theme; dark theme; blend theme; album art background:
-![CompositeRed](https://user-images.githubusercontent.com/35600752/155882945-a1b344e8-5a88-49b9-95b8-c87eb4cb3d74.png)
+![Muse](https://user-images.githubusercontent.com/35600752/155903327-9631a328-2f67-4f25-9cbd-316e5f5210b5.png)
 
 #### Screenshot: album art background + jump search
 ![T_Rex](https://user-images.githubusercontent.com/35600752/118255885-b5a41e00-b4a4-11eb-8f19-7a24e5215463.png)
