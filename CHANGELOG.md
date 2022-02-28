@@ -1,9 +1,9 @@
 # v2.2.1
 
 ### Changed
-- Album art: index character(s) that appear on dragging scrollbar
+- Album art index character(s) that appear on dragging scrollbar:
     - Number now user configurable (album art tab)
-    - Option to show 4 digits if leading %date% detected in view pattern
+    - Option to show 4 digits if leading %date% detected in view pattern (album art tab)
 - Improved horizontal flow mode metrics
 - Custom node default changed to clean + - (if updating, reset page on advanced tab is needed for them to show)
 - Removed the ability to auto-update from old versions (v2.1.3 or earlier)
