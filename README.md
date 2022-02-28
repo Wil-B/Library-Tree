@@ -20,7 +20,7 @@ Feature rich library viewer for foobar2000, now extended to include album art.
 - [FontAwesome](https://github.com/FortAwesome/Font-Awesome/blob/fa-4/fonts/fontawesome-webfont.ttf?raw=true)
 
 ### INSTALLATION
-Install as package.
+Install as a package as follows.
 
 New install or update:
 1) Add a spider monkey panel to foobar2000 if required
