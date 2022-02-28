@@ -2,7 +2,7 @@
 
 if (typeof my_utils === 'undefined') include('utils.js');
 
-const loadAsync = window.GetProperty('Load Find & Play Asynchronously', true);
+const loadAsync = window.GetProperty('Load Library Tree Asynchronously', true);
 
 async function readFiles(files) {
 	for (const file of files) {
@@ -16,35 +16,26 @@ const files = [
 	'helpers.js',
 	'properties.js',
 	'interface.js',
-	'names.js',
 	'panel.js',
-	'medialibrary.js',
-	'text.js',
-	'playlists.js',
-	'library.js',
-	'blacklistvideo.js',
-	'web.js',
-	'mtags.js',
 	'scrollbar.js',
-	'autodj.js',
-	'albums.js',
+	'library.js',
+	'populate.js',
 	'search.js',
 	'buttons.js',
-	'images.js',
+	'popupbox.js',
 	'timers.js',
 	'menu.js',
-	'tagger.js',
-	'popupbox.js',
 	'initialise.js',
+	'images.js',
 	'callbacks.js'
 ];
 
 if (loadAsync) {
-	readFiles(files).then(() => {
-		if (!window.ID) return; // fix pss issue
-		on_size();
-		window.Repaint();
-	});
+readFiles(files).then(() => {
+	if (!window.ID) return; // fix pss issue
+	on_size();
+	window.Repaint();
+});
 } else {
 	files.forEach(v => include(my_utils.getScriptPath + v));
 }
