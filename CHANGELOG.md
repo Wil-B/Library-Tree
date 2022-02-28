@@ -8,7 +8,7 @@
 - Removed the ability to auto-update from old versions (v2.1.3 or earlier)
 
 ### Added
-- Ability to show source (library, playlist name, panel etc): options\display tab\root. Default off. Useful if you don't use a constant source
+- Ability to show source at root, e.g. library, playlist name, panel etc (display tab). Default off. Useful if you don't use a constant source
 - Option to customise the name of 'Library Tree Panel Selection' playlist (panel properties: 'Playlist: Panel Selection'): it's used to save the contents of the 2nd panel between foobar2000 restarts.
 
 ### Fixed
