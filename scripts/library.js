@@ -357,9 +357,6 @@ class Library {
 		}
 		this.upd = 0;
 	}
-	rememberViewProp() {
-		return `Tree.View ${$.padNumber(ppt.viewBy, 2) + (!panel.imgView ? '' : ' Image')}`
-	}
 
 	checkView() {
 		const startIX = ppt.rememberView ? panel.grp.length : 0
@@ -589,6 +586,10 @@ class Library {
 				ppt.rememberView ? ppt.set(this.rememberViewProp(), null) : ppt.set(!panel.imgView ? 'Tree' : 'Tree Image', JSON.stringify(this.exp));
 			}
 		} else ppt.process = false;
+	}
+
+	rememberViewProp() {
+		return `Tree.View ${$.padNumber(ppt.viewBy, 2) + (!panel.imgView ? '' : ' Image')}`
 	}
 
 	removed(handleList) {

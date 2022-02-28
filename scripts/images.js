@@ -960,7 +960,7 @@ class Images {
 				sbar.setRows(Math.ceil(pop.tree.length / this.columns));
 				break;
 			}
-			case false: // only H-Flow
+			case false: { // only H-Flow
 				this.labels = {
 					hide: !ppt.albumArtLabelType,
 					bottom: ppt.albumArtLabelType == 1 || ppt.albumArtLabelType == 2,
@@ -1010,6 +1010,7 @@ class Images {
 				sbar.metrics(sbar.x, sbar.y, ui.w, ui.sbar.w, panel.rows, this.blockWidth, this.style.vertical);
 				sbar.setRows(Math.ceil(pop.tree.length));
 				break;
+			}
 		}
 
 		this.cellWidth = Math.max(200, this.im.w / 2);
