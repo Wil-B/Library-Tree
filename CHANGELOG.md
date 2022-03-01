@@ -1,7 +1,7 @@
 # v2.2.1
 
 ### Changed
-- Album art index character(s) (scrollbar drag):
+- Album art index character(s) that show on scrollbar drag:
     - Number now user configurable (album art tab)
     - Option to show 4 digits if leading %date% detected in view pattern (album art tab)
 - Improved horizontal flow mode metrics
