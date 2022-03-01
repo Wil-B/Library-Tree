@@ -32,7 +32,7 @@ New install or update:
 7) Import the package
 
 #### Screenshot: Two panel mode (index left | front covers right; dark theme; columns UI with splitter hidden):
-![lett](https://user-images.githubusercontent.com/35600752/155883811-6913f1dc-74c7-4e0e-b811-86fcd90f7260.png)
+![Character](https://user-images.githubusercontent.com/35600752/156163852-5d8295f4-3ff2-4ef4-849f-0bd5ce24ba8e.png)
 
 #### Screenshot: Upper panel: Flow mode | Lower panels: various node styles with, left to right: user interface theme; dark theme; blend theme; album art background:
 ![Muse](https://user-images.githubusercontent.com/35600752/155903327-9631a328-2f67-4f25-9cbd-316e5f5210b5.png)
