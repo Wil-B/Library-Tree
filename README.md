@@ -32,7 +32,7 @@ New install or update:
 6) Open package manager if it doesn't open automatically
 7) Import the package
 
-#### Screenshot: Two panel mode (index left | front covers right; dark theme; columns UI with splitter hidden):
+#### Screenshot: Two panel mode (index left | front covers right; dark theme; columns UI with splitter hidden; see below for how to setup):
 ![Character](https://user-images.githubusercontent.com/35600752/156163852-5d8295f4-3ff2-4ef4-849f-0bd5ce24ba8e.png)
 
 #### Screenshot: Upper panel: Flow mode | Lower panels: tree mode + various node styles with, left to right: user interface theme; dark theme; blend theme; album art background:
@@ -40,6 +40,14 @@ New install or update:
 
 #### Screenshot: album art background + jump search
 ![T_Rex](https://user-images.githubusercontent.com/35600752/118255885-b5a41e00-b4a4-11eb-8f19-7a24e5215463.png)
+
+### Index view as in screenshot
+Use 2 pane mode.
+- Right panel: set source to panel & follow instructions on pop-up.
+- Left panel: on behaviour tab, tick 'List view (tree)'. Use a pattern something like: 
+```
+$cut(%artist%,1)|%artist%|$if2(%album%,εXtra)|[[%discnumber%.]%tracknumber%. ][%track artist% - ]%title%
+```
 
 #### Credits
 - Original Jscript library search (2013): thanhdat1710
