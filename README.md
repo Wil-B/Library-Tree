@@ -3,10 +3,6 @@
 <!-- <img src= "https://img.shields.io/github/v/release/Wil-b/Library-Tree?include_prereleases">[![CodeFactor](https://www.codefactor.io/repository/github/wil-b/smp-scripts/badge?s=e31aef34da666a7f881d60c035843654ee451e7d)](https://www.codefactor.io/repository/github/wil-b/smp-scripts) -->
 
 Feature rich library viewer for foobar2000, now extended to include album art.
-
-#### Screenshot: two panel mode (artist images left | front covers right; dark theme; columns UI with splitter hidden):
-<!-- ![Art-Album](https://user-images.githubusercontent.com/35600752/156166256-d1543dce-369a-454a-a5b0-5a28f333348e.png) -->
-![2pane](https://user-images.githubusercontent.com/35600752/155884212-9bea1326-3430-46a4-a86e-3bc4b09e4dd4.png)
  
  ### FEATURES
 - Tree viewer + album art support.
@@ -32,23 +28,28 @@ New install or update:
 6) Open package manager if it doesn't open automatically
 7) Import the package
 
-#### Screenshot: Two panel mode (index left | front covers right; dark theme; columns UI with splitter hidden; see below for how to setup):
+## Screenshots
+
+### Two panel mode with index and covers
 ![Character](https://user-images.githubusercontent.com/35600752/156163852-5d8295f4-3ff2-4ef4-849f-0bd5ce24ba8e.png)
-
-#### Screenshot: Upper panel: Flow mode | Lower panels: tree mode + various node styles with, left to right: user interface theme; dark theme; blend theme; album art background:
-![Muse](https://user-images.githubusercontent.com/35600752/155903327-9631a328-2f67-4f25-9cbd-316e5f5210b5.png)
-
-#### Screenshot: album art background + jump search
-![T_Rex](https://user-images.githubusercontent.com/35600752/118255885-b5a41e00-b4a4-11eb-8f19-7a24e5215463.png)
-
-### Index view as in screenshot
-Use two panel mode, i.e. position two Spider Monkey Panels each containing library tree next to each other
+To set up the above use two panel mode, i.e. position two Spider Monkey Panels each containing library tree next to each other. The screenshot is using the dark theme (display tab) and columns UI with the dividing splitter hidden.
 - Right panel: set source to panel & follow instructions on pop-up
 - Left panel: on display tab, tick 'List view (tree)'. Use a pattern something like: 
 ```
 $cut(%artist%,1)|%artist%|$if2(%album%,εXtra)|[[%discnumber%.]%tracknumber%. ][%track artist% - ]%title%
 ```
 
-#### Credits
+### Two panel mode with artist images and covers
+![2pane](https://user-images.githubusercontent.com/35600752/155884212-9bea1326-3430-46a4-a86e-3bc4b09e4dd4.png)
+The screenshot is using the dark theme and columns UI with dividing splitter hidden.
+
+### Flow mode (upper) and tree modes (lower)
+![Muse](https://user-images.githubusercontent.com/35600752/155903327-9631a328-2f67-4f25-9cbd-316e5f5210b5.png)
+Tree modes shows various node styles with, left to right: user interface theme; dark theme; blend theme; album art background
+
+### Album art background + jump search
+![T_Rex](https://user-images.githubusercontent.com/35600752/118255885-b5a41e00-b4a4-11eb-8f19-7a24e5215463.png)
+
+## Credits
 - Original Jscript library search (2013): thanhdat1710
 - Original JS smooth browser design (2015): Br3tt (aka falstaff)
