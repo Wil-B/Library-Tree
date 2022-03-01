@@ -42,9 +42,9 @@ New install or update:
 ![T_Rex](https://user-images.githubusercontent.com/35600752/118255885-b5a41e00-b4a4-11eb-8f19-7a24e5215463.png)
 
 ### Index view as in screenshot
-Use 2 pane mode.
+Use two panel mode, i.e. put two Spider Monkey Panels each containing library tree next to each other
 - Right panel: set source to panel & follow instructions on pop-up
-- Left panel: on behaviour tab, tick 'List view (tree)'. Use a pattern something like: 
+- Left panel: on display tab, tick 'List view (tree)'. Use a pattern something like: 
 ```
 $cut(%artist%,1)|%artist%|$if2(%album%,εXtra)|[[%discnumber%.]%tracknumber%. ][%track artist% - ]%title%
 ```
