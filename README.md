@@ -5,6 +5,8 @@
 Feature rich library viewer for foobar2000, now extended to include album art.
 
 #### Screenshot: two panel mode (artist images left | front covers right; dark theme; columns UI with splitter hidden):
+![Art-Album](https://user-images.githubusercontent.com/35600752/156166256-d1543dce-369a-454a-a5b0-5a28f333348e.png)
+
 ![2pane](https://user-images.githubusercontent.com/35600752/155884212-9bea1326-3430-46a4-a86e-3bc4b09e4dd4.png)
  
  ### FEATURES
