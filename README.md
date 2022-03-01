@@ -42,7 +42,7 @@ New install or update:
 ![T_Rex](https://user-images.githubusercontent.com/35600752/118255885-b5a41e00-b4a4-11eb-8f19-7a24e5215463.png)
 
 ### Index view as in screenshot
-Use two panel mode, i.e. put two Spider Monkey Panels each containing library tree next to each other
+Use two panel mode, i.e. position two Spider Monkey Panels each containing library tree next to each other
 - Right panel: set source to panel & follow instructions on pop-up
 - Left panel: on display tab, tick 'List view (tree)'. Use a pattern something like: 
 ```
