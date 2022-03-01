@@ -43,7 +43,7 @@ New install or update:
 
 ### Index view as in screenshot
 Use 2 pane mode.
-- Right panel: set source to panel & follow instructions on pop-up.
+- Right panel: set source to panel & follow instructions on pop-up
 - Left panel: on behaviour tab, tick 'List view (tree)'. Use a pattern something like: 
 ```
 $cut(%artist%,1)|%artist%|$if2(%album%,εXtra)|[[%discnumber%.]%tracknumber%. ][%track artist% - ]%title%
