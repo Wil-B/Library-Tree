@@ -2,7 +2,7 @@
 
 ### Changed
 - Album art index character(s) that show on scrollbar drag:
-    - Number now user configurable. No limit, e.g. can be single letter up to full name (album art tab)
+    - Number now user configurable: no limit, e.g. can be single letter up to full name (album art tab)
     - Option to show 4 digits if leading %date% detected in view pattern (album art tab)
 - Improved horizontal flow mode metrics
 - Custom nodes: default changed to clean + - (if updating, click reset page on advanced tab to replace previous style)
