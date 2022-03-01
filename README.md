@@ -32,7 +32,7 @@ New install or update:
 
 ### Two panel mode with index and covers
 ![Character](https://user-images.githubusercontent.com/35600752/156163852-5d8295f4-3ff2-4ef4-849f-0bd5ce24ba8e.png)
-To set up the above use two panel mode, i.e. position two Spider Monkey Panels each containing library tree next to each other. The screenshot is using the dark theme (display tab) and columns UI with the dividing splitter hidden.
+To set up the above use two panel mode, i.e. position two Spider Monkey Panels each containing library tree side by side. The screenshot is using the dark theme (display tab) and columns UI with the dividing splitter hidden.
 - Right panel: set source to panel & follow instructions on pop-up
 - Left panel: on display tab, tick 'List view (tree)'. Use a pattern something like: 
 ```
