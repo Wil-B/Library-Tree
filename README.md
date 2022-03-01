@@ -5,8 +5,7 @@
 Feature rich library viewer for foobar2000, now extended to include album art.
 
 #### Screenshot: two panel mode (artist images left | front covers right; dark theme; columns UI with splitter hidden):
-![Art-Album](https://user-images.githubusercontent.com/35600752/156166256-d1543dce-369a-454a-a5b0-5a28f333348e.png)
-
+<!-- ![Art-Album](https://user-images.githubusercontent.com/35600752/156166256-d1543dce-369a-454a-a5b0-5a28f333348e.png) -->
 ![2pane](https://user-images.githubusercontent.com/35600752/155884212-9bea1326-3430-46a4-a86e-3bc4b09e4dd4.png)
  
  ### FEATURES
@@ -36,7 +35,7 @@ New install or update:
 #### Screenshot: Two panel mode (index left | front covers right; dark theme; columns UI with splitter hidden):
 ![Character](https://user-images.githubusercontent.com/35600752/156163852-5d8295f4-3ff2-4ef4-849f-0bd5ce24ba8e.png)
 
-#### Screenshot: Upper panel: Flow mode | Lower panels: various node styles with, left to right: user interface theme; dark theme; blend theme; album art background:
+#### Screenshot: Upper panel: Flow mode | Lower panels: tree mode + various node styles with, left to right: user interface theme; dark theme; blend theme; album art background:
 ![Muse](https://user-images.githubusercontent.com/35600752/155903327-9631a328-2f67-4f25-9cbd-316e5f5210b5.png)
 
 #### Screenshot: album art background + jump search
