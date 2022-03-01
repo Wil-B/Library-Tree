@@ -47,7 +47,7 @@ The screenshot is using the dark theme and columns UI with dividing splitter hid
 ![Muse](https://user-images.githubusercontent.com/35600752/155903327-9631a328-2f67-4f25-9cbd-316e5f5210b5.png)
 Tree modes shows various node styles with, left to right: user interface theme; dark theme; blend theme; album art background
 
-### Album art background + jump search
+### Tree mode with album art background + jump search
 ![T_Rex](https://user-images.githubusercontent.com/35600752/118255885-b5a41e00-b4a4-11eb-8f19-7a24e5215463.png)
 
 ## Credits
