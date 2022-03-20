@@ -42,7 +42,7 @@ Tree modes shows various node styles with, left to right: user interface theme; 
 ![Character](https://user-images.githubusercontent.com/35600752/156163852-5d8295f4-3ff2-4ef4-849f-0bd5ce24ba8e.png)
 To set up the above, position two Spider Monkey Panels side by side. Add library tree to each. The screenshot is using the dark theme (display tab) and columns UI with the dividing splitter hidden.
 - Right panel: set source to panel & follow instructions on pop-up
-- Left panel: on display tab, tick 'List view (tree)'. Use a pattern something like: 
+- Left panel: on display tab, tick 'List view (tree)'. Use a view pattern something like: 
 ```
 $cut(%artist%,1)|%artist%|$if2(%album%,εXtra)|[[%discnumber%.]%tracknumber%. ][%track artist% - ]%title%
 ```
