@@ -5,10 +5,10 @@
 Feature rich library viewer for [foobar2000](https://www.foobar2000.org), now extended to include album art.
  
  ### FEATURES
-- Tree viewer + album art support.
-- Library and playlist sources.
-- Single panel and two panel modes.
-- Album art flow mode.
+- Tree viewer + album art support
+- Library and playlist sources
+- Single panel and two panel modes
+- Album art flow mode
 
 ### REQUIREMENTS:
 - [foobar2000](https://www.foobar2000.org)
@@ -30,15 +30,6 @@ New install or update:
 
 ## Screenshots
 
-### Two panel mode with index and covers
-![Character](https://user-images.githubusercontent.com/35600752/156163852-5d8295f4-3ff2-4ef4-849f-0bd5ce24ba8e.png)
-To set up the above use two panel mode, i.e. position two Spider Monkey Panels each containing library tree side by side. The screenshot is using the dark theme (display tab) and columns UI with the dividing splitter hidden.
-- Right panel: set source to panel & follow instructions on pop-up
-- Left panel: on display tab, tick 'List view (tree)'. Use a pattern something like: 
-```
-$cut(%artist%,1)|%artist%|$if2(%album%,εXtra)|[[%discnumber%.]%tracknumber%. ][%track artist% - ]%title%
-```
-
 ### Two panel mode with artist images and covers
 ![2pane](https://user-images.githubusercontent.com/35600752/155884212-9bea1326-3430-46a4-a86e-3bc4b09e4dd4.png)
 The screenshot is using the dark theme and columns UI with dividing splitter hidden.
@@ -47,6 +38,14 @@ The screenshot is using the dark theme and columns UI with dividing splitter hid
 ![Muse](https://user-images.githubusercontent.com/35600752/155903327-9631a328-2f67-4f25-9cbd-316e5f5210b5.png)
 Tree modes shows various node styles with, left to right: user interface theme; dark theme; blend theme; album art background
 
+### Two panel mode with index and covers
+![Character](https://user-images.githubusercontent.com/35600752/156163852-5d8295f4-3ff2-4ef4-849f-0bd5ce24ba8e.png)
+To set up the above, position two Spider Monkey Panels side by side. Add library tree to each. The screenshot is using the dark theme (display tab) and columns UI with the dividing splitter hidden.
+- Right panel: set source to panel & follow instructions on pop-up
+- Left panel: on display tab, tick 'List view (tree)'. Use a pattern something like: 
+```
+$cut(%artist%,1)|%artist%|$if2(%album%,εXtra)|[[%discnumber%.]%tracknumber%. ][%track artist% - ]%title%
+```
 ### Tree mode with album art background + jump search
 ![T_Rex](https://user-images.githubusercontent.com/35600752/118255885-b5a41e00-b4a4-11eb-8f19-7a24e5215463.png)
 
