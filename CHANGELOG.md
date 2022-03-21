@@ -19,9 +19,9 @@
 - Lines sometimes overdrawing expanded [-] square icon
 - Rare library update crash
 - Wine stabilisation: library tree should no longer give errors in Wine, but some limitations remain:
-    - Copy & paste into search box using clipboard may not work. This may be fixed in due course through an update to Spider Monkey Panel
-    - Recycler is unlikely to work: it's used when refreshing images: windows explorer can be used to remove images from the cache instead
-    - Options dialog may not load: menu now indicates there was a problem & console explains what can be done instead
+    - copy & paste into search box using clipboard may not work. This may be fixed in due course through an update to Spider Monkey Panel
+    - recycler is unlikely to work: it's used when refreshing images: windows explorer can be used to remove images from the cache instead
+    - options dialog may not load: menu now indicates there was a problem & console explains what can be done instead
 <br />
 
 # v2.2.0
