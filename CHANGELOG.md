@@ -14,6 +14,7 @@
 
 ### Fixed
 - Album art: draw issue with dark overlay labels (compact/grid mode)
+- Keystroke navigation irregularities
 - No display sorting of albums starting with numbers
 - plman.GetPlaylistLockedActions(playlistIndex) error when playlistIndex is invalid
 - Lines sometimes overdrawing expanded [-] square icon
