@@ -11,6 +11,7 @@
 ### Added
 - Ability to show source at root, e.g. library, playlist name, panel etc (display tab). Default off. Useful if you don't use a constant source
 - Option to customise the name of 'Library Tree Panel Selection' playlist (panel properties: 'Playlist: Panel Selection'): it's used to save the contents of the 2nd panel between foobar2000 restarts.
+- hover effect: tree / album art: option to always use mouse pointer (no hand)
 
 ### Fixed
 - Album art: draw issue with dark overlay labels (compact/grid mode)
