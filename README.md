@@ -12,7 +12,7 @@ Feature rich library viewer for [foobar2000](https://www.foobar2000.org), now ex
 
 ### REQUIREMENTS:
 - [foobar2000](https://www.foobar2000.org)
-- [Spider Monkey Panel 1.5.2+](https://www.foobar2000.org/components). v1.6.1 is recommended for most users. If you use pseudo-transparency v1.5.2 is best, as transparent backgrounds may not update properly in 1.6.1+. If you're on Wine this version has a fix for copy / paste
+- [Spider Monkey Panel 1.5.2+](https://www.foobar2000.org/components)
 - IE8 or later
 - [FontAwesome](https://github.com/FortAwesome/Font-Awesome/blob/fa-4/fonts/fontawesome-webfont.ttf?raw=true)
 
