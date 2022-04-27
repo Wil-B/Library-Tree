@@ -128,8 +128,7 @@ class Panel {
 				this.filter.x = ui.sz.marginSearch;
 				break;
 			case !ppt.settingsShow:
-
-				this.filter.x = ui.w - ui.sz.marginSearch - this.filter.w; // want? better right margin when settings off
+				this.filter.x = ui.w - ui.sz.marginSearch - this.filter.w;
 				break;
 			case !ppt.filterShow:
 				this.filter.x = ui.w - ui.sz.marginSearch * 2 - this.settings.w + this.settings.offset;

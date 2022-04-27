@@ -252,6 +252,7 @@ class MenuItems {
 			func: () => {
 				ppt.libSource = 0;
 				ppt.fixedPlaylist = false;
+				ppt.fixedPlaylistName = 'ActivePlaylist';
 				if (panel.imgView) img.clearCache();
 				lib.searchCache = {};
 				if (ppt.showSource) panel.setRootName();
@@ -564,6 +565,8 @@ class MenuItems {
 				if (ppt.panelSourceMsg) popUpBox.message();
 				break;
 			case 2:
+				const fixedPlaylistIndex = plman.FindPlaylist(ppt.fixedPlaylistName);
+				if (fixedPlaylistIndex != -1) ppt.fixedPlaylist = true;
 				ppt.libSource = ppt.fixedPlaylist ? 1 : 0;
 				if (ppt.panelSourceMsg) popUpBox.message();
 				break;

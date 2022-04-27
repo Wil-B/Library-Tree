@@ -1199,7 +1199,6 @@ class Populate {
 		this.dbl_clicked = false;
 		if (y < panel.search.h) return;
 		let ix = this.get_ix(x, y, true, false);
-		panel.pos = ix;
 		if (ix >= this.tree.length || ix < 0) return;
 		this.deactivateTooltip();
 		if (ppt.touchControl) {
@@ -1209,6 +1208,7 @@ class Populate {
 		this.clicked_on = this.clickedOn(x, y, item);
 		switch (this.clicked_on) {
 			case 'node':
+				panel.pos = ix;
 				this.expandCollapse(x, y, item, ix);
 				this.checkRow(x, y);
 				break;
@@ -1216,6 +1216,7 @@ class Populate {
 				this.last_pressed_coord.x = x;
 				this.last_pressed_coord.y = y;
 				this.lbtnDn = true;
+				panel.pos = ix;
 				if (ppt.touchControl) break;
 				if (vk.k('alt') && this.autoFill.mouse) return;
 				if (!item.sel && !vk.k('ctrl')) this.setTreeSel(ix, item.sel);
@@ -1266,6 +1267,16 @@ class Populate {
 		this.row.i = -1;
 		this.row.cur = 0;
 		panel.treePaint();
+	}
+
+	leftKeyCheckScroll() {
+		const row = (panel.pos * ui.row.h - sbar.scroll) / ui.row.h;
+		if (sbar.scroll > panel.pos * ui.row.h) sbar.checkScroll(panel.pos * ui.row.h);
+		else if (row - sbar.rows_drawn > 0) {
+		sbar.checkScroll((panel.pos + 3 - sbar.rows_drawn) * ui.row.h);
+		}
+		else sbar.scrollRound();
+		lib.treeState(false, ppt.rememberTree);
 	}
 
 	load(list, isArray, add, autoPlay, def_pl, insert) {
@@ -1371,9 +1382,11 @@ class Populate {
 			this.m.i = ix;
 			this.check_tooltip(ix, x, y);
 		} else this.deactivateTooltip();
-		if (this.highlight.node || panel.imgView) {
-			if (ix != -1 || this.inlineRoot && !this.m.br) this.hand = true;
-		} else if (this.m.br != -1 && !(this.inlineRoot && !this.m.br)) this.hand = true;
+		if (!ppt.mousePointerOnly) {
+			if (this.highlight.node || panel.imgView) {
+				if (ix != -1 || this.inlineRoot && !this.m.br) this.hand = true;
+			} else if (this.m.br != -1 && !(this.inlineRoot && !this.m.br)) this.hand = true;
+		}
 		window.SetCursor(this.hand ? 32649 : !but.Dn && y < panel.search.h && ppt.searchShow && x > but.q.h + but.margin && x < panel.search.x + panel.search.w ? 32513 : 32512);
 		const same = this.m.i == this.cur_ix && this.m.br == this.m.cur_br && this.row.i == this.row.cur;
 		if (same && !sbar.touch.dn) return;
@@ -1477,11 +1490,8 @@ class Populate {
 			}
 		}
 		let item = -1;
-		let row = -1;
 		switch (vkey) {
 			case vk.left:
-				if (!(panel.pos >= 0) && this.row.i != -1) panel.pos = this.row.i;
-				else panel.pos = panel.pos + this.tree.length % this.tree.length;
 				if (panel.imgView) panel.pos -= 1;
 				panel.pos = $.clamp(panel.pos, 0, this.tree.length - 1);
 				this.row.i = -1;
@@ -1494,7 +1504,12 @@ class Populate {
 					break;
 				}
 				// !imgView
-				if ((this.tree[panel.pos].tr == (this.rootNode ? 1 : 0)) && this.tree[panel.pos].child.length < 1) break;
+				if ((this.tree[panel.pos].tr == (this.rootNode ? 1 : 0)) && this.tree[panel.pos].child.length < 1) {
+					item = this.tree[panel.pos];
+					this.m.i = panel.pos = item.ix;
+					this.leftKeyCheckScroll();
+					break;
+				}
 				if (this.tree[panel.pos].child.length > 0) {
 					item = this.tree[panel.pos];
 					this.clearChild(item);
@@ -1509,13 +1524,9 @@ class Populate {
 				panel.treePaint();
 				this.setPlaylist(panel.pos, item);
 				sbar.setRows(this.tree.length);
-				if (sbar.scroll > panel.pos * ui.row.h) sbar.checkScroll(panel.pos * ui.row.h);
-				else sbar.scrollRound();
-				lib.treeState(false, ppt.rememberTree);
+				this.leftKeyCheckScroll();
 				break;
 			case vk.right: {
-				if (!(panel.pos >= 0) && this.row.i != -1) panel.pos = this.row.i;
-				else panel.pos = panel.pos + this.tree.length % this.tree.length;
 				if (panel.imgView) panel.pos += 1;
 				panel.pos = $.clamp(panel.pos, 0, this.tree.length - 1);
 				this.row.i = -1;
@@ -1528,6 +1539,12 @@ class Populate {
 					break;
 				}
 				// !imgView
+				if (item.child.length) {
+					panel.pos++;
+					panel.pos = $.clamp(panel.pos, !this.rootNode ? 0 : 1, this.tree.length - 1);
+					this.upDnKeyCheckScroll(vkey);
+					break
+				}
 				if (ppt.autoCollapse) this.branchChange(item, false, true);
 				this.branch(item, !item.root ? false : true, true);
 				let n = 2;
@@ -1540,9 +1557,9 @@ class Populate {
 				this.m.i = panel.pos = item.ix;
 				this.setPlaylist(panel.pos, item);
 				sbar.setRows(this.tree.length);
-				row = (panel.pos * ui.row.h - sbar.scroll) / ui.row.h;
-				if (row + n + item.child.length > sbar.rows_drawn) {
-					if (item.child.length > (sbar.rows_drawn - n)) sbar.checkScroll(panel.pos * ui.row.h);
+				const row = (panel.pos * ui.row.h - sbar.scroll) / ui.row.h;
+				if (row + n + item.child.length > sbar.rows_drawn || row < 0) {
+					if (item.child.length > (sbar.rows_drawn - n) || row < 0) sbar.checkScroll(panel.pos * ui.row.h);
 					else sbar.checkScroll(Math.min(panel.pos * ui.row.h, (panel.pos + n - sbar.rows_drawn + item.child.length) * ui.row.h));
 				} else sbar.scrollRound();
 				lib.treeState(false, ppt.rememberTree);
@@ -1551,8 +1568,6 @@ class Populate {
 			case vk.pgUp:
 				if (this.tree.length == 0) break;
 				if (panel.imgView) {
-					if (!(panel.pos >= 0) && this.row.i != -1) panel.pos = this.row.i;
-					else panel.pos = panel.pos + this.tree.length % this.tree.length;
 					panel.pos = panel.pos - img.columns * (panel.rows - 1);
 					panel.pos = $.clamp(panel.pos, 0, this.tree.length - 1);
 				} else panel.pos = Math.max(Math.round(sbar.scroll / ui.row.h + 0.4) - Math.floor(panel.rows) + 1, !this.rootNode ? 0 : 1);
@@ -1566,8 +1581,6 @@ class Populate {
 			case vk.pgDn:
 				if (this.tree.length == 0) break;
 				if (panel.imgView) {
-					if (!(panel.pos >= 0) && this.row.i != -1) panel.pos = this.row.i;
-					else panel.pos = panel.pos + this.tree.length % this.tree.length;
 					panel.pos = panel.pos + img.columns * (panel.rows - 1);
 					panel.pos = $.clamp(panel.pos, 0, this.tree.length - 1);
 				} else panel.pos = Math.min(Math.round(sbar.scroll / ui.row.h + 0.4) + Math.floor(panel.rows) * 2 - 2, this.tree.length - 1);
@@ -1598,12 +1611,10 @@ class Populate {
 			case vk.dn:
 			case vk.up:
 				if (this.tree.length == 0) break;
-				if ((panel.pos == 0 && this.row.i == -1 && vkey == vk.up) || (panel.pos == this.tree.length - 1 && vkey == vk.dn)) {
+				if ((panel.pos == 0 && vkey == vk.up) || (panel.pos == this.tree.length - 1 && vkey == vk.dn)) {
 					this.setTreeSel(-1);
 					break;
 				}
-				if (this.row.i != -1) panel.pos = this.row.i;
-				else panel.pos = panel.pos + this.tree.length % this.tree.length;
 				this.row.i = -1;
 				this.m.i = -1;
 				if (!panel.imgView) {
@@ -1621,14 +1632,7 @@ class Populate {
 					this.setPlaylist(panel.pos, item);
 					return;
 				}
-				row = (panel.pos * ui.row.h - sbar.scroll) / ui.row.h;
-				if (sbar.rows_drawn - row < 3) sbar.checkScroll((panel.pos + 3) * ui.row.h - sbar.rows_drawn * ui.row.h);
-				else if (row < 2 && vkey == vk.up) sbar.checkScroll((panel.pos - 1) * ui.row.h);
-				this.m.i = panel.pos;
-				this.setTreeSel(panel.pos);
-				panel.treePaint();
-				this.setPlaylist(panel.pos, this.tree[panel.pos]);
-				lib.treeState(false, ppt.rememberTree);
+				this.upDnKeyCheckScroll(vkey);
 				break;
 		}
 	}
@@ -1795,7 +1799,7 @@ class Populate {
 				case 'left':
 				case 'right': {
 					const row2 = (row1 * sbar.row.h - sbar.scroll) / sbar.row.h;
-					if (sbar.rows_drawn - row2 < 1) sbar.checkScroll((row1 + 1) * sbar.row.h - sbar.rows_drawn * sbar.row.h);
+					if (sbar.rows_drawn - row2 < 1 || row2 < 0) sbar.checkScroll((row1 + 1) * sbar.row.h - sbar.rows_drawn * sbar.row.h);
 					else if (row2 < 1 & (type == 'up' || type == 'left')) sbar.checkScroll(row1 * sbar.row.h);
 				}
 			}
@@ -1868,5 +1872,16 @@ class Populate {
 
 	uniq(arr) {
 		this.sel_items = [...new Set(arr)].sort(this.numSort);
+	}
+
+	upDnKeyCheckScroll(vkey) {
+		const row = (panel.pos * ui.row.h - sbar.scroll) / ui.row.h;
+		if (sbar.rows_drawn - row < 3 || row < 0) sbar.checkScroll((panel.pos + 3) * ui.row.h - sbar.rows_drawn * ui.row.h);
+		else if (row < 2 && vkey == vk.up) sbar.checkScroll((panel.pos - 1) * ui.row.h);
+		this.m.i = panel.pos;
+		this.setTreeSel(panel.pos);
+		panel.treePaint();
+		this.setPlaylist(panel.pos, this.tree[panel.pos]);
+		lib.treeState(false, ppt.rememberTree);
 	}
 }

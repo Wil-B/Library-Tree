@@ -204,6 +204,7 @@ let properties = [
 	['Line Padding', 5, 'verticalPad'],
 	['Line Padding Album Art', 2, 'verticalAlbumArtPad'],
 	['Margin', Math.round(8 * $.scale), 'margin'],
+	['Mouse: Always Pointer (no hand)', false, 'mousePointerOnly'],
 
 	['Node: Auto Collapse', false, 'autoCollapse'],
 	['Node: Highlight on Hover', true, 'highLightNode'],
@@ -215,7 +216,7 @@ let properties = [
 	['Node: Show Lines', true, 'nodeLines'],
 	['Node: Show Tracks', true, 'showTracks'],
 	['Node: Style', 2, 'nodeStyle'],
-	['Node [Squares]: Windows 0 or 1', false, 'winNode'],
+	['Node [Squares]: Windows', false, 'winNode'],
 	['Node Custom Icon: +|-', '\u002B|\u002D', 'iconCustom'],
 	['Node Custom Icon: Vertical Offset (%)', 0, 'iconVerticalPad'],
 	['Play on Enter or Send from Menu', false, 'autoPlay'],
@@ -284,4 +285,5 @@ const ppt = new PanelProperties;
 ppt.init('auto', properties);
 ppt.set('Image Pre-Load Images In Disk Cache', null);
 ppt.set('Image Root Collage', null);
+ppt.set('Node [Squares]: Windows 0 or 1', null);
 properties = undefined;

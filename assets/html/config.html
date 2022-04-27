@@ -710,18 +710,18 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				var clickLabels = ['Select', 'Send to playlist', 'Send to playlist & play', 'Send to playlist & play [add if playing]'];
 				var colourLabels = ['Text', 'Text highlight', 'Text selection', 'Text nowplaying highlight', 'Text search', 'Buttons', 'Background', 'Background accent', 'Background selection', 'Frame hover', 'Frame selection', 'Item counts', 'Node collapse', 'Node expand', 'Node hover', 'Node lines', 'Separators', 'Side marker', 'Transparent fill'];
 				var coverFormatLabels = ['Cover auto-fill', 'Cover opacity (%)'];
-				var cusNodeLabels = ['Custom icon expand|collapse', 'Custom icon font name', 'Custom icon offset (%)', 'Square nodes: use windows'];
+				var cusNodeLabels = ['Custom icon expand|collapse', 'Custom icon font name', 'Custom icon padding (+/-)', 'Square nodes: use windows'];
 				var cusScrollLabels = ['Step (0 = page)', 'Smooth duration max (ms)', 'Touch duration max (ms)', 'Touch sensitivity 0-10'];
 				var dblClickLabels = ['Send to playlist', 'Send to playlist & play', 'Expand / collapse (tree)'];
 				var diskCacheLabels = ['Enable', 'Preload cached images']
 				var followCurrentLabels = ['Standard mode', 'Flow mode'];
 				var fontLabels = ['Main', 'Album art line 1', 'Album art line 2'];
-				var highLightLabels = ['None', 'Side marker', 'Accent', 'Frame', 'Highlight nodes', 'Highlight text'];
-				var indexLetterLabels = ['Show on scrollbar drag', 'Default number of characters', 'Show 4 characters if leading %date% detected'];
+				var highLightLabels = ['None', 'Side marker', 'Accent', 'Frame', 'Always pointer (no hand)', 'Highlight nodes', 'Highlight text'];
+				var indexLetterLabels = ['Show on scrollbar drag', 'Default number of characters', 'Show 4 digits if leading %date% detected'];
 				var keystrokeLabels = ['Select', 'Send to playlist']
 				var itemCountsLabels = ['Hide', '# Tracks', '# Sub-items', 'Align right'];
 				var metricsLabels = ['Margin', 'Tree indent', 'Line padding tree', 'Line padding album art'];
-				var nodeLabels = [ppt['winNode_internal'].value == 0 ? 'Squares' : 'Squares (windows)', 'Arrows', 'Angles', 'Triangles', 'Custom', 'Show lines (squares only)'];
+				var nodeLabels = ['Squares', 'Arrows', 'Angles', 'Triangles', 'Custom'];
 				var playlistLabels = ['Default', 'Activate when changed'];
 				var playlistSortLabels = ['Playlist sort order (empty = default)'];				
 				var rememberLabels = ['On exit', 'All views'];
@@ -743,6 +743,12 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				var treeLabels = ['Auto-collapse', 'Expand single items', 'Expand if # tracks less than:'];	
 				var loadLabels = ['Auto-sync with library changes', 'Prefixes to strip or swap (| separator)']
 				var modeLabels = ['Max height', 'Min height', 'Limit menu expand: 10-6000'];
+				
+				function setNodeLabels() {
+					nodeLabels[0] = !ppt['winNode_internal'].value ? 'Squares' : 'Squares (windows)';
+					if (ppt['nodeStyle_internal'].value == 0 || ppt['nodeStyle_internal'].value == 5) window.node_dropdown.innerHTML = nodeLabels[0];
+					window.nodeNo0.innerHTML = nodeLabels[0];
+				}
 
 				var input = {
 					behaviour: {
@@ -772,7 +778,7 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				input.all.type = input.behaviour.type.concat(input.display.type, input.albumArt.type, input.custom.type, input.advanced.type);
 				var box = {
 					behaviour: ['fullLineSelection', 'autoPlay', 'sbarWinMetrics', 'smooth', 'touchControl', 'searchEnter', 'autoCollapse', 'treeAutoExpandSingle', 'treeAutoExpand', 'rememberTree', 'rememberView', 'activateOnChange'],
-					display: ['searchShow', 'filterShow', 'settingsShow', 'swapCol', 'autoFill', 'inlineRoot', 'showSource', 'nodeLines', 'countsRight', 'highLightNode', 'highLightText', 'rowStripes', 'highLightNowplaying', 'albumArtOptionsShow', 'treeListView', 'showTracks'],
+					display: ['searchShow', 'filterShow', 'settingsShow', 'swapCol', 'autoFill', 'inlineRoot', 'showSource', 'nodeLines', 'countsRight', 'mousePointerOnly', 'highLightNode', 'highLightText', 'rowStripes', 'highLightNowplaying', 'albumArtOptionsShow', 'treeListView', 'showTracks'],
 					albumArt: ['albumArtFlipLabels', 'stndModeFollowSelection', 'flowModeFollowSelection', 'albumArtDiskCache', 'albumArtPreLoad', 'albumArtFlowMode', 'artTreeSameView', 'albumArtLetter', 'albumArtYearAuto'],
 					custom: ['custFontUse', 'custAlbumArtGrpFontUse', 'custAlbumArtLotFontUse', 'textUse', 'text_hUse', 'textSelUse', 'nowpUse', 'searchUse', 'txt_boxUse', 'bgUse', 'bg_hUse', 'bgSelUse', 'frameUse', 'bgSelframeUse', 'countsUse', 'icon_cUse', 'icon_eUse', 'icon_hUse', 'lineUse', 's_lineUse', 'sideMarkerUse', 'bgTransUse'],
 					advanced: ['sbarFullHeight', 'winNode', 'blurAutofill', 'libAutoSync', 'pn_h_auto']
@@ -846,6 +852,7 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				}
 
 				function setNode(n) {
+					setNodeLabels();
 					window.node_dropdown.innerHTML = nodeLabels[n];
 					ppt['nodeStyle_internal'].value = n;
 					window.node.style.display = 'none';
@@ -1097,9 +1104,9 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 					i = 4; window.rootStyle.insertAdjacentHTML('beforeend', '<div><input id="root_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="root_checkbox'+i+'" class="checkbox_label">'+rootLabels[i]+'</label></div>');
 					i = 5; window.rootStyle.insertAdjacentHTML('beforeend', '<div><input id="root_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="root_checkbox'+i+'" class="checkbox_label">'+rootLabels[i]+'</label></div>');
 
-					window.node_dropdown.innerHTML = nodeLabels[ppt['nodeStyle_internal'].value];
-					for (i = 0; i < 5; i++) {window.node.insertAdjacentHTML('beforeend', '<a onclick="setNode(' + i + ');">'+nodeLabels[i]+'</a>');}
-					i = 5; window.nodeLines.insertAdjacentHTML('beforeend', '<div><input id="node_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="node_checkbox'+i+'" class="checkbox_label">'+nodeLabels[i]+'</label></div>');
+					window.node_dropdown.innerHTML = ppt['nodeStyle_internal'].value != 5 ? nodeLabels[ppt['nodeStyle_internal'].value] : 'Squares (windows)';
+					for (i = 0; i < 5; i++) {window.node.insertAdjacentHTML('beforeend', '<a id="nodeNo'+i+'" onclick="setNode(' + i + ');">'+nodeLabels[i]+'</a>');}
+					i = 5; window.nodeLines.insertAdjacentHTML('beforeend', '<div><input id="node_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="node_checkbox'+i+'" class="checkbox_label">Show lines (squares only)</label></div>');
 
 					window.itemCounts_dropdown.innerHTML = itemCountsLabels[ppt['nodeCounts_internal'].value];
 					for (i = 0; i < 3; i++) {window.itemCounts.insertAdjacentHTML('beforeend', '<a onclick="setItemCounts(' + i + ');">'+itemCountsLabels[i]+'</a>');}
@@ -1107,7 +1114,7 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 					
 					window.showHl_dropdown.innerHTML = highLightLabels[ppt['highLightRow_internal'].value];
 					for (i = 0; i < 4; i++) {window.showHl.insertAdjacentHTML('beforeend', '<a onclick="setHoverBg(' + i + ');">'+highLightLabels[i]+'</a>');}
-					for (i = 4; i < 6; i++) {window.showH2.insertAdjacentHTML('beforeend', '<div><input id="showH2_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="showH2_checkbox'+i+'" class="checkbox_label">'+highLightLabels[i]+'</label></div>');}
+					for (i = 4; i < 7; i++) {window.showH2.insertAdjacentHTML('beforeend', '<div><input id="showH2_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="showH2_checkbox'+i+'" class="checkbox_label">'+highLightLabels[i]+'</label></div>');}
 					for (i = 0; i < 5; i++) {window.show.insertAdjacentHTML('beforeend', '<div><input id="show_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="show_checkbox'+i+'" class="checkbox_label">'+showLabels[i]+'</label></div>');}
 				}
 
@@ -1203,6 +1210,7 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				setCustomColours('value');
 				setCheckboxes('all', 'value');
 				setInputs('all', 'value');
+				//setNodeLabels();/////
 				setRadioBtns('all', 'value');
 				generateTable('syntax');
 
@@ -1250,8 +1258,9 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				window.theme_checkbox5.parentNode.disabled = ppt['theme_internal'].value == 1;
 				window.coverFormat_checkbox0.parentNode.disabled = ppt['theme_internal'].value != 4;
 				window.coverFormat_container1.parentNode.disabled = ppt['theme_internal'].value != 4;
-				window.node_checkbox5.parentNode.disabled = ppt['nodeStyle_internal'].value != 0;
-				window.showH2_checkbox4.parentNode.disabled = ppt['nodeStyle_internal'].value == 0 && ppt['winNode_internal'].value != 0;
+				window.node_checkbox5.parentNode.disabled = ppt['nodeStyle_internal'].value != 0 && ppt['nodeStyle_internal'].value != 5;
+				setNodeLabels();
+				window.showH2_checkbox5.parentNode.disabled = window.cusNode_checkbox3.checked && (ppt['nodeStyle_internal'].value == 0 || ppt['nodeStyle_internal'].value == 5);// && ppt['winNode_internal'].value != 0;
 				document.getElementById("albumArtCfg").style.display = window.show_checkbox2.checked ? "block" : "none";
 				window.albumArtLabelType2.parentNode.disabled = window.flowMode_checkbox.checked;
 				window.thumbSize_dropdown.style.visibility = window.flowMode_checkbox.checked ? 'hidden' : 'visible';
@@ -1279,8 +1288,9 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				window.coverFormat_checkbox0.parentNode.disabled = ppt['theme_internal'].value != 4;
 				window.coverFormat_container1.parentNode.disabled = ppt['theme_internal'].value != 4;
 				
-				window.node_checkbox5.parentNode.disabled = ppt['nodeStyle_internal'].value != 0;
-				window.showH2_checkbox4.parentNode.disabled = window.node;
+				window.node_checkbox5.parentNode.disabled = ppt['nodeStyle_internal'].value != 0 && ppt['nodeStyle_internal'].value != 5;
+				window.showH2_checkbox5.parentNode.disabled = window.cusNode_checkbox3.checked && (ppt['nodeStyle_internal'].value == 0 || ppt['nodeStyle_internal'].value == 5);
+				
 				window.albumArtLabelType2.parentNode.disabled = window.flowMode_checkbox.checked;
 			}
 

@@ -225,10 +225,11 @@ class Scrollbar {
 			let letter = panel.lines == 1 || !ppt.albumArtFlipLabels ? pop.tree[ix].grp : pop.tree[ix].lot;
 			letter = !panel.colMarker ? letter.substring(0, img.letter.no) : letter.replace(/@!#.*?@!#/g, '').substring(0, img.letter.no);
 			const verticalAdjacent = ppt.albumArtFlowMode && img.style.vertical && img.columnWidth < img.panel.w - img.letter.w * 1.25;
-			if (img.style.vertical && !verticalAdjacent) gr.FillSolidRect(0, this.y + this.bar.y + this.bar.h / 2 - img.text.h / 2, img.letter.w * img.letter.no + 1, img.text.h + 2, ui.col.bg);
-			if (img.style.vertical && !verticalAdjacent) gr.FillSolidRect(0, this.y + this.bar.y + this.bar.h / 2 - img.text.h / 2, img.letter.w * img.letter.no + 1, img.text.h + 2, ui.col.bg3);
-			if (img.style.vertical) gr.GdiDrawText(letter, ui.font.main, ui.col.text, !verticalAdjacent ? ui.l.w : sbar_x - img.letter.w * 1.25, this.y + this.bar.y + this.bar.h / 2 - img.text.h / 2, img.letter.w * img.letter.no, img.text.h, panel.cc);
-			else gr.GdiDrawText(letter, ui.font.main, ui.col.text, this.x + this.bar.x + this.bar.h / 2 - img.letter.w * img.letter.no / 2, sbar_y - img.text.h, img.letter.w * img.letter.no, img.text.h, panel.cc);
+			const w = Math.min(gr.CalcTextWidth(letter, ui.font.main) + img.letter.w, ui.w);
+			if (img.style.vertical && !verticalAdjacent) gr.FillSolidRect(0, this.y + this.bar.y + this.bar.h / 2 - img.text.h / 2, w + 1, img.text.h + 2, ui.col.bg);
+			if (img.style.vertical && !verticalAdjacent) gr.FillSolidRect(0, this.y + this.bar.y + this.bar.h / 2 - img.text.h / 2, w + 1, img.text.h + 2, ui.col.bg3);
+			if (img.style.vertical) gr.GdiDrawText(letter, ui.font.main, ui.col.text, !verticalAdjacent ? ui.l.w : sbar_x - img.letter.w * 1.25, this.y + this.bar.y + this.bar.h / 2 - img.text.h / 2, w, img.text.h, panel.cc);
+			else gr.GdiDrawText(letter, ui.font.main, ui.col.text, this.x + this.bar.x + this.bar.h / 2 - w / 2, sbar_y - img.text.h, w, img.text.h, panel.cc);
 		}
 	}
 
