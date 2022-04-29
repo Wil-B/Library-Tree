@@ -5,10 +5,10 @@
     - Number now user configurable: no limit, e.g. can be single letter up to full name (album art tab)
     - Option to show 4 digits if leading %date% detected in view pattern (album art tab)
 - Improved horizontal flow mode metrics
-- Custom nodes: default changed to clean + / - (if updating, click reset page on advanced tab to replace previous style)
 - Removed the ability to auto-update from old versions (v2.1.3 or earlier)
 
 ### Added
+- Quicksetup: new clean preset with alternative selection model
 - Ability to show source at root, e.g. library, playlist name, panel etc (display tab). Default off. Useful if you don't use a constant source
 - Option to customise the name of 'Library Tree Panel Selection' playlist (panel properties: 'Playlist: Panel Selection'): it's used to save the contents of the 2nd panel between foobar2000 restarts.
 - hover effect: tree / album art: option to always use mouse pointer (no hand)
