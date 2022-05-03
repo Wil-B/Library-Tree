@@ -1,9 +1,9 @@
 # v2.2.1
 
 ### Changed
-- Album art index character(s) that show on scrollbar drag:
-    - Number now user configurable: no limit, e.g. can be single letter up to full name (album art tab)
-    - Option to show 4 digits if leading %date% detected in view pattern (album art tab)
+- Album art index character(s) that show on scrollbar drag are now configurable:
+    - No limit to number, e.g. can be single letter up to full name (album art tab)
+    - Year can be autodetected and 4 digits shown, if number above is less than 4 (album art tab)
 - Improved horizontal flow mode metrics
 - Removed the ability to auto-update from old versions (v2.1.3 or earlier)
 
