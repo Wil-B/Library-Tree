@@ -1,4 +1,4 @@
-# v2.2.1
+# v2.3.0
 
 ### Changed
 - Album art index character(s) that show on scrollbar drag are now configurable:
