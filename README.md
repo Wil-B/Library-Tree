@@ -52,3 +52,4 @@ $cut(%artist%,1)|%artist%|$if2(%album%,εXtra)|[[%discnumber%.]%tracknumber%. ][
 ### Credits
 - Original Jscript library search (2013): thanhdat1710
 - Original JS smooth browser design (2015): Br3tt (aka falstaff)
+- [TT-ReBORN](https://github.com/TT-ReBORN) for clean preset inspiration 
