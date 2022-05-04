@@ -210,6 +210,12 @@ class Panel {
 		this.folderView = ppt.viewBy == this.folder_view;
 		if (grpsOnly) return;
 		this.colMarker = this.grp[ppt.viewBy].type.includes('$colour{');
+		let valid = false;
+		if (ui.img.blurDark && ppt.text_hUse) {
+			const c = ppt.text_h.replace(/[^0-9.,-]/g, '').split(/[,-]/);
+			if (c.length == 3 || c.length == 4) valid = true;
+		}
+		this.textDiffHighlight = ui.img.blurDark && !ppt.highLightRow && !(ppt.text_hUse && valid) && ppt.highLightText && !this.colMarker;
 		if (this.folderView) {
 			this.samePattern = !this.newView && !this.init;
 		} else {
@@ -706,7 +712,7 @@ class Panel {
 	}
 
 	set(n, i, treeArtToggle) {
-		const prompt = 'This option changes various options\n\nContinue?';
+		const prompt = 'This changes various options\n\nContinue?';
 		switch (n) {
 			case 'quickSetup':
 				switch (i) {
@@ -721,11 +727,11 @@ class Panel {
 								ppt.treeListView = false;
 								ui.sbar.type = 0;
 								ppt.sbarType = 0;
-								ppt.sbarShow = 2;
+								ppt.sbarShow = 1;
 								ppt.fullLineSelection = false;
-								ppt.highLightText = true;
+								ppt.highLightText = false;
 								ppt.rowStripes = false;
-								ppt.highLightRow = 3;
+								ppt.highLightRow = 2;
 								ppt.highLightNode = true;
 								ppt.verticalPad = 3;
 								ppt.rootNode = 1;
@@ -807,6 +813,37 @@ class Panel {
 						const continue_confirmation = (status, confirmed) => {
 							if (confirmed) {
 								ppt.countsRight = true;
+								ppt.nodeStyle = 4;
+								ppt.inlineRoot = true;
+								ppt.autoCollapse = false;
+								ppt.treeAutoExpandSingle = false;
+								ppt.treeListView = false;
+								ui.sbar.type = 0;
+								ppt.sbarType = 0;
+								ppt.sbarShow = 1;
+								ppt.fullLineSelection = true;
+								ppt.highLightText = true;
+								ppt.rowStripes = false;
+								ppt.highLightRow = 0;
+								ppt.highLightNode = true;
+								ppt.verticalPad = 5;
+								ppt.rootNode = 3;
+								panel.imgView = ppt.albumArtShow = false;
+								ppt.albumArtLabelType = 1;
+								ppt.thumbNailSize = 1;
+								ppt.artId = 0;
+								this.load();
+							}
+						}
+						const caption = 'Quick Setup: Clean';
+						const wsh = popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation);
+						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
+						break;
+					}
+					case 4: {
+						const continue_confirmation = (status, confirmed) => {
+							if (confirmed) {
+								ppt.countsRight = true;
 								ppt.nodeStyle = 2;
 								ppt.inlineRoot = true;
 								ppt.autoCollapse = false;
@@ -834,7 +871,7 @@ class Panel {
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
-					case 4: {
+					case 5: {
 						const continue_confirmation = (status, confirmed) => {
 							if (confirmed) {
 								ui.sbar.type = 1;
@@ -865,7 +902,7 @@ class Panel {
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
-					case 5: {
+					case 6: {
 						const continue_confirmation = (status, confirmed) => {
 							if (confirmed) {
 								ui.sbar.type = 1;
@@ -896,7 +933,7 @@ class Panel {
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
-					case 6: {
+					case 7: {
 						const continue_confirmation = (status, confirmed) => {
 							if (confirmed) {
 								ui.sbar.type = 1;
@@ -927,7 +964,7 @@ class Panel {
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
-					case 7: {
+					case 8: {
 						const continue_confirmation = (status, confirmed) => {
 							if (confirmed) {
 								ppt.countsRight = true;
@@ -953,7 +990,7 @@ class Panel {
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
-					case 8:
+					case 9:
 						ppt.toggle('presetLoadCurView');
 						return;
 				}

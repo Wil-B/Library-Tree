@@ -84,7 +84,6 @@ class Helpers {
 		try {
 			return utils.GetClipboardText();
 		} catch(e) {
-			console.log('UTILS GET CLIPBOARD FAILED');
 			try {
 				return doc.parentWindow.clipboardData.getData('Text');
 			} catch (e) {

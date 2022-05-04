@@ -369,7 +369,7 @@ class Populate {
 	}
 
 	checkNode(gr) {
-		if (sbar.draw_timer || this.nodeStyle != 5) return;
+		if (sbar.draw_timer || this.nodeStyle != 6) return;
 		try {
 			ui.style.symb.SetPartAndStateID(2, 1);
 			ui.style.symb.SetPartAndStateID(2, 2);
@@ -556,7 +556,7 @@ class Populate {
 		} else {
 			let lightCol = ui.getSelCol(ui.col.icon_h, true) == 50;
 			$.gr(1, 1, false, g => {
-				const h = this.nodeStyle != 5 ? g.CalcTextHeight('String', ui.icon.font) / 15 : g.CalcTextHeight('String', ui.font.main) / 20;
+				const h = this.nodeStyle != 6 ? g.CalcTextHeight('String', ui.icon.font) / 15 : g.CalcTextHeight('String', ui.font.main) / 20;
 				this.sy_sz = Math.floor(Math.max(8 * ppt.zoomNode / 100 * h, 5));
 			});
 
@@ -686,6 +686,8 @@ class Populate {
 		if (!this.tree.length || !panel.draw) return gr.GdiDrawText(pop.libItems && !panel.search.txt && !ppt.filterBy && ppt.libSource ? 'Loading...' : lib.none, ui.font.main, ui.col.text, ui.sz.margin, panel.search.h, panel.tree.w, ui.row.h, 0x00000004 | 0x00000400);
 		if (panel.imgView) return;
 		const b = $.clamp(Math.round(sbar.delta / ui.row.h + 0.4), 0, this.tree.length - 1);
+		const bar_x = this.nodeStyle && this.nodeStyle < 4 ? 0 : ui.sz.pad;
+		const bar_w = Math.min(ui.sz.margin / 2, ui.sz.sideMarker * 2);
 		const f = Math.min(b + panel.rows, this.tree.length);
 		const nowp_c = [];
 		const row = [];
@@ -737,12 +739,23 @@ class Populate {
 					}
 					if (!nowp_c.includes(i)) {
 						if (this.fullLineSelection && this.sbarShow == 1 && ui.sbar.type == 2) {
-							gr.FillSolidRect(sel_x, item_y, sel_w + ui.l.w, ui.row.h, ui.col.bgSel);
-							gr.FillSolidRect(sel_x, item_y, sel_w + ui.l.w, ui.l.w, ui.col.bgSelframe);
-							gr.FillSolidRect(sel_x, item_y + ui.row.h, sel_w + ui.l.w, ui.l.w, ui.col.bgSelframe);
+							if (this.highlight.row || !this.fullLineSelection) {
+								gr.FillSolidRect(sel_x, item_y, sel_w + ui.l.w, ui.row.h, ui.col.bgSel);
+								gr.FillSolidRect(sel_x, item_y, sel_w + ui.l.w, ui.l.w, ui.col.bgSelframe);
+								gr.FillSolidRect(sel_x, item_y + ui.row.h, sel_w + ui.l.w, ui.l.w, ui.col.bgSelframe);
+							} else {
+								gr.FillSolidRect(sel_x, item_y, sel_w + ui.l.w, ui.l.w, ui.col.bgSelframe);
+								gr.FillSolidRect(sel_x, item_y + ui.row.h, sel_w + ui.l.w, ui.l.w, ui.col.bgSelframe);
+								gr.FillSolidRect(bar_x, item_y, bar_w, ui.row.h, ui.col.sideMarker);
+							}
 						} else {
-							gr.FillSolidRect(sel_x, item_y, sel_w, ui.row.h, ui.col.bgSel);
-							gr.DrawRect(sel_x + Math.floor(ui.l.w / 2), item_y, sel_w, ui.row.h, ui.l.w, ui.col.bgSelframe);
+							if (this.highlight.row || !this.fullLineSelection) {
+								gr.FillSolidRect(sel_x, item_y, sel_w, ui.row.h, ui.col.bgSel);
+								gr.DrawRect(sel_x + Math.floor(ui.l.w / 2), item_y, sel_w, ui.row.h, ui.l.w, ui.col.bgSelframe);
+							} else {
+								gr.DrawRect(sel_x + Math.floor(ui.l.w / 2), item_y, sel_w, ui.row.h, ui.l.w, ui.col.bgSelframe);
+								gr.FillSolidRect(bar_x, item_y, bar_w, ui.row.h, ui.col.sideMarker);
+							}
 						}
 					}
 				}
@@ -828,9 +841,9 @@ class Populate {
 					item.w = panel.tree.w - item_x;
 					item.id = this.id;
 				}
-				let np = this.m.i == i && this.highlight.row == 2 ? false : nowp_c.includes(i);
-				const txt_co = np ? ui.col.nowp : item.sel && this.fullLineSelection ? ui.col.textSel : this.m.i == i && this.highlight.text ? ui.col.text_h : ui.col.counts || ui.col.count;
-				const type = item.sel ? 2 : this.m.i == i && this.highlight.text ? 1 : 0;
+				let np = this.m.i == i && this.highlight.row == 2 ? false : nowp_c.includes(i) || panel.textDiffHighlight && this.m.i == i;
+				const txt_co = np ? ui.col.nowp : item.sel && this.fullLineSelection ? (this.highlight.row ? ui.col.textSel : ui.col.text) : this.m.i == i && this.highlight.text ? ui.col.text_h : ui.col.counts || ui.col.count;
+				const type = item.sel ? (this.highlight.row || !this.fullLineSelection ? 2 : 0) : this.m.i == i && this.highlight.text ? 1 : 0;
 				const txt_c = np ? ui.col.nowp : ui.col.txtArr[type];
 				!panel.colMarker ? gr.GdiDrawText(nm[i], ui.font.main, txt_c, item_x, item_y, w, ui.row.h, panel.lc) : this.cusCol(gr, nm[i], item, item_x, item_y, w, ui.row.h, type, np, ui.font.main, ui.font.mainEllipsisSpace, 'text');
 				if (this.countsRight) gr.GdiDrawText(item.count, ui.font.small, txt_co, item_x, item_y, panel.tree.w - item_x, ui.row.h, panel.rc);
@@ -850,6 +863,7 @@ class Populate {
 				break;
 			case 1:
 			case 2:
+				if (!this.highlight.row && this.fullLineSelection) x += ui.l.w;
 				if (parent) {
 					if (hover) {
 						gr.DrawString(ui.icon.expand, ui.icon.font, selFullLine ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
@@ -867,6 +881,7 @@ class Populate {
 				}
 				break;
 			case 3: {
+				if (!this.highlight.row && this.fullLineSelection) x += ui.l.w;
 				const y3 = Math.round(y + (ui.row.h - this.sy_sz) / 2 - 2);
 				gr.SetSmoothingMode(4);
 				if (parent) {
@@ -879,7 +894,18 @@ class Populate {
 				gr.SetSmoothingMode(0);
 				break;
 			}
-			case 5:
+			case 4:
+				if (parent) {
+					if (hover) {
+						gr.DrawString(ui.icon.expand, ui.icon.font, selFullLine ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x, y2, panel.tree.w - x, ui.row.h - 1, panel.s_lc);
+					} else gr.DrawString(ui.icon.expand, ui.icon.font, !selFullLine ? ui.col.icon_c : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h - 1, panel.s_lc);
+				} else {
+					if (hover) {
+						gr.DrawString(ui.icon.collapse, ui.icon.font, selFullLine ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_c, x - ui.icon.offset, y2, panel.tree.w - x, ui.row.h - 1, panel.s_lc);
+					} else gr.DrawString(ui.icon.collapse, ui.icon.font, !selFullLine ? ui.col.icon_e : ui.col.textSel, x - ui.icon.offset, y2, panel.tree.w - x, ui.row.h - 1, panel.s_lc);
+				}
+				break;
+			case 6:
 				if (item > 1) item -= 2;
 				ui.style.symb.SetPartAndStateID(2, !item ? 1 : 2);
 				ui.style.symb.DrawThemeBackground(gr, x, y, ui.sz.node, ui.sz.node);

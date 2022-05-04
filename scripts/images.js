@@ -690,7 +690,7 @@ class Images {
 	}
 
 	getGrpCol(item, nowp, hover) {
-		return nowp ? ui.col.nowp : hover ? ui.col.text_h : item.sel ? !this.labels.overlayDark ? ui.col.textSel : ui.col.text : !this.labels.overlayDark ? ui.col.text : RGB(240, 240, 240);
+		return nowp ? ui.col.nowp : hover ? (panel.textDiffHighlight ? ui.col.nowp : ui.col.text_h) : item.sel ? !this.labels.overlayDark ? ui.col.textSel : ui.col.text : !this.labels.overlayDark ? ui.col.text : RGB(240, 240, 240);
 	}
 
 	getImages() {
@@ -795,7 +795,7 @@ class Images {
 	}
 
 	getLotCol(item, nowp, hover) {
-		return nowp ? ui.col.nowp : hover ? ui.col.text_h : item.sel ? !this.labels.overlayDark ? ui.col.selBlend : ui.col.lotBlend : !this.labels.overlayDark ? ui.col.lotBlend : RGB(220, 220, 220);
+		return nowp ? ui.col.nowp : hover ? (panel.textDiffHighlight ? ui.col.nowp : ui.col.text_h) : item.sel ? !this.labels.overlayDark ? ui.col.selBlend : ui.col.lotBlend : !this.labels.overlayDark ? ui.col.lotBlend : RGB(220, 220, 220);
 	}
 
 	getMostFrequentField(arr) {

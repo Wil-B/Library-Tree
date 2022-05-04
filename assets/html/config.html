@@ -336,6 +336,7 @@ Selected items will be displayed in the menu.
 				<div id="metrics2"></div>
 				</div>
 				</div>
+				<div id="metrics3"></div>
 			</div>
 		</div>
 		</div>
@@ -720,8 +721,8 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				var indexLetterLabels = ['Show on scrollbar drag', 'Default number of characters', 'Show 4 digits if leading %date% detected'];
 				var keystrokeLabels = ['Select', 'Send to playlist']
 				var itemCountsLabels = ['Hide', '# Tracks', '# Sub-items', 'Align right'];
-				var metricsLabels = ['Margin', 'Tree indent', 'Line padding tree', 'Line padding album art'];
-				var nodeLabels = ['Squares', 'Arrows', 'Angles', 'Triangles', 'Custom'];
+				var metricsLabels = ['Margin', 'Tree indent', 'Line padding tree', 'Line padding album art', 'Side marker width (0 = auto)'];
+				var nodeLabels = ['Squares', 'Arrows', 'Angles', 'Triangles', 'Signs', 'Custom'];
 				var playlistLabels = ['Default', 'Activate when changed'];
 				var playlistSortLabels = ['Playlist sort order (empty = default)'];				
 				var rememberLabels = ['On exit', 'All views'];
@@ -736,7 +737,7 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				var searchLabels = ['Search only', 'Send results to playlist on enter','Auto-send results to playlist', 'Require enter to search'];
 				var showLabels = ['Row stripes', 'Nowplaying in highlight', 'Album art options', 'List view (tree)', 'Tracks (tree)'];				
 				var tfInput = ['Library View'];
-				var themeLabels = ['User interface', 'Dark', 'Blend', 'Light', 'Cover', 'Swap colours'];
+				var themeLabels = ['User interface', 'Dark', 'Blend', 'Light', 'Random', 'Cover', 'Swap colours'];
 				var themeBlurLabels = ['Auto-fill', 'Level (%)', 'Opacity (%)', '%'];
 				var thumbNailGapLabels = ['Thumbnail gap'];
 				var thumbnailSizeLabels = ['Small', 'Regular', 'Medium', 'Large'];
@@ -746,7 +747,7 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				
 				function setNodeLabels() {
 					nodeLabels[0] = !ppt['winNode_internal'].value ? 'Squares' : 'Squares (windows)';
-					if (ppt['nodeStyle_internal'].value == 0 || ppt['nodeStyle_internal'].value == 5) window.node_dropdown.innerHTML = nodeLabels[0];
+					if (ppt['nodeStyle_internal'].value == 0 || ppt['nodeStyle_internal'].value == 6) window.node_dropdown.innerHTML = nodeLabels[0];
 					window.nodeNo0.innerHTML = nodeLabels[0];
 				}
 
@@ -756,8 +757,8 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 						type: ['int', 'text', 'text']
 					},
 					display: {
-						name: ['covAlpha', 'margin', 'treeIndent', 'verticalPad', 'verticalAlbumArtPad'],
-						type: ['float', 'int', 'int', 'int', 'int']
+						name: ['covAlpha', 'margin', 'treeIndent', 'verticalPad', 'verticalAlbumArtPad', 'sideMarkerWidth'],
+						type: ['float', 'int', 'int', 'int', 'int', 'int']
 						
 					},
 					albumArt: {
@@ -1091,22 +1092,23 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 					for (i = 0; i < 3; i++) {window.bar.insertAdjacentHTML('beforeend', '<div><input id="bar_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="bar_checkbox'+i+'" class="checkbox_label">'+barLabels[i]+'</label></div>');}
 					
 					window.theme_dropdown.innerHTML = themeLabels[ppt['theme_internal'].value];
-					for (i = 0; i < 5; i++) {window.themeBg.insertAdjacentHTML('beforeend', '<a onclick="setTheme(' + i + ');">'+themeLabels[i]+'</a>');}
+					for (i = 0; i < 6; i++) {window.themeBg.insertAdjacentHTML('beforeend', '<a onclick="setTheme(' + i + ');">'+themeLabels[i]+'</a>');}
 					
-					i = 5; window.themeStyle.insertAdjacentHTML('beforeend', '<div><input id="theme_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="theme_checkbox'+i+'" class="checkbox_label">'+themeLabels[i]+'</label></div>');
+					i = 6; window.themeStyle.insertAdjacentHTML('beforeend', '<div><input id="theme_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="theme_checkbox'+i+'" class="checkbox_label">'+themeLabels[i]+'</label></div>');
 					i = 0; window.coverFormat.insertAdjacentHTML('beforeend', '<div><input id="coverFormat_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="coverFormat_checkbox'+i+'" class="checkbox_label">'+coverFormatLabels[i]+'</label></div>');
 					i = 1; window.coverFormat.insertAdjacentHTML('beforeend', '<div class="input_cnt1"><input id="coverFormat_container'+i+'" name="display_input" class="input3" /><label for="coverFormat_container'+i+'" class="inp_label2">'+coverFormatLabels[i]+'</label></div>');
 					for (i = 0; i < 2; i++) {window.metrics1.insertAdjacentHTML('beforeend', '<div class="input_cnt3"><input id="metrics_container'+i+'" name="display_input" style="padding:0; margin:0;" class="input3" /><label for="metrics_container'+i+'" class="inp_label2">'+metricsLabels[i]+'</label></div>');}
 					for (i = 2; i < 4; i++) {window.metrics2.insertAdjacentHTML('beforeend', '<div class="input_cnt3"><input id="metrics_container'+i+'" name="display_input" style="padding:0; margin:0;" class="input3" /><label for="metrics_container'+i+'" class="inp_label2">'+metricsLabels[i]+'</label></div>');}
+					i = 4; window.metrics3.insertAdjacentHTML('beforeend', '<div class="input_cnt3"><input id="metrics_container'+i+'" name="display_input" style="padding:0; margin:0;" class="input3" /><label for="metrics_container'+i+'" class="inp_label2">'+metricsLabels[i]+'</label></div>');
 			
 					window.root_dropdown.innerHTML = rootLabels[ppt['rootNode_internal'].value];
 					for (i = 0; i < 4; i++) {window.root.insertAdjacentHTML('beforeend', '<a onclick="setRoot(' + i + ');">'+rootLabels[i]+'</a>');}
 					i = 4; window.rootStyle.insertAdjacentHTML('beforeend', '<div><input id="root_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="root_checkbox'+i+'" class="checkbox_label">'+rootLabels[i]+'</label></div>');
 					i = 5; window.rootStyle.insertAdjacentHTML('beforeend', '<div><input id="root_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="root_checkbox'+i+'" class="checkbox_label">'+rootLabels[i]+'</label></div>');
 
-					window.node_dropdown.innerHTML = ppt['nodeStyle_internal'].value != 5 ? nodeLabels[ppt['nodeStyle_internal'].value] : 'Squares (windows)';
-					for (i = 0; i < 5; i++) {window.node.insertAdjacentHTML('beforeend', '<a id="nodeNo'+i+'" onclick="setNode(' + i + ');">'+nodeLabels[i]+'</a>');}
-					i = 5; window.nodeLines.insertAdjacentHTML('beforeend', '<div><input id="node_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="node_checkbox'+i+'" class="checkbox_label">Show lines (squares only)</label></div>');
+					window.node_dropdown.innerHTML = ppt['nodeStyle_internal'].value != 6 ? nodeLabels[ppt['nodeStyle_internal'].value] : 'Squares (windows)';
+					for (i = 0; i < 6; i++) {window.node.insertAdjacentHTML('beforeend', '<a id="nodeNo'+i+'" onclick="setNode(' + i + ');">'+nodeLabels[i]+'</a>');}
+					i = 6; window.nodeLines.insertAdjacentHTML('beforeend', '<div><input id="node_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="node_checkbox'+i+'" class="checkbox_label">Show lines (squares only)</label></div>');
 
 					window.itemCounts_dropdown.innerHTML = itemCountsLabels[ppt['nodeCounts_internal'].value];
 					for (i = 0; i < 3; i++) {window.itemCounts.insertAdjacentHTML('beforeend', '<a onclick="setItemCounts(' + i + ');">'+itemCountsLabels[i]+'</a>');}
@@ -1210,7 +1212,6 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				setCustomColours('value');
 				setCheckboxes('all', 'value');
 				setInputs('all', 'value');
-				//setNodeLabels();/////
 				setRadioBtns('all', 'value');
 				generateTable('syntax');
 
@@ -1255,12 +1256,12 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				if (window.remember_checkbox1.checked) window.remember_checkbox0.checked = true;
 				window.remember_checkbox0.parentNode.disabled = window.remember_checkbox1.checked;
 				
-				window.theme_checkbox5.parentNode.disabled = ppt['theme_internal'].value == 1;
-				window.coverFormat_checkbox0.parentNode.disabled = ppt['theme_internal'].value != 4;
-				window.coverFormat_container1.parentNode.disabled = ppt['theme_internal'].value != 4;
-				window.node_checkbox5.parentNode.disabled = ppt['nodeStyle_internal'].value != 0 && ppt['nodeStyle_internal'].value != 5;
+				window.theme_checkbox6.parentNode.disabled = ppt['theme_internal'].value == 1 || ppt['theme_internal'].value == 4;
+				window.coverFormat_checkbox0.parentNode.disabled = ppt['theme_internal'].value != 5;
+				window.coverFormat_container1.parentNode.disabled = ppt['theme_internal'].value != 5;
+				window.node_checkbox6.parentNode.disabled = ppt['nodeStyle_internal'].value != 0 && ppt['nodeStyle_internal'].value != 6;
 				setNodeLabels();
-				window.showH2_checkbox5.parentNode.disabled = window.cusNode_checkbox3.checked && (ppt['nodeStyle_internal'].value == 0 || ppt['nodeStyle_internal'].value == 5);// && ppt['winNode_internal'].value != 0;
+				window.showH2_checkbox5.parentNode.disabled = window.cusNode_checkbox3.checked && (ppt['nodeStyle_internal'].value == 0 || ppt['nodeStyle_internal'].value == 6);
 				document.getElementById("albumArtCfg").style.display = window.show_checkbox2.checked ? "block" : "none";
 				window.albumArtLabelType2.parentNode.disabled = window.flowMode_checkbox.checked;
 				window.thumbSize_dropdown.style.visibility = window.flowMode_checkbox.checked ? 'hidden' : 'visible';
@@ -1276,7 +1277,7 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				var radios = radio[page];
 				for (i = 0; i < radios.length; i++) {
 					var radioBtns = document.getElementsByName(radios[i]);
-					var new_value = radios[i] == 'nodeStyle' && ppt[radios[i] + '_internal'][value] == 5 ? 0 : ppt[radios[i] + '_internal'][value];
+					var new_value = radios[i] == 'nodeStyle' && ppt[radios[i] + '_internal'][value] == 6 ? 0 : ppt[radios[i] + '_internal'][value];
 					for (j = 0; j < radioBtns.length; j++) {
 						if (j == new_value) {
 							radioBtns[j].checked = true;
@@ -1284,12 +1285,12 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 						}
 					}
 				}
-				window.theme_checkbox5.parentNode.disabled = ppt['theme_internal'].value == 1;
-				window.coverFormat_checkbox0.parentNode.disabled = ppt['theme_internal'].value != 4;
-				window.coverFormat_container1.parentNode.disabled = ppt['theme_internal'].value != 4;
+				window.theme_checkbox6.parentNode.disabled = ppt['theme_internal'].value == 1 || ppt['theme_internal'].value == 4;
+				window.coverFormat_checkbox0.parentNode.disabled = ppt['theme_internal'].value != 5;
+				window.coverFormat_container1.parentNode.disabled = ppt['theme_internal'].value != 5;
 				
-				window.node_checkbox5.parentNode.disabled = ppt['nodeStyle_internal'].value != 0 && ppt['nodeStyle_internal'].value != 5;
-				window.showH2_checkbox5.parentNode.disabled = window.cusNode_checkbox3.checked && (ppt['nodeStyle_internal'].value == 0 || ppt['nodeStyle_internal'].value == 5);
+				window.node_checkbox6.parentNode.disabled = ppt['nodeStyle_internal'].value != 0 && ppt['nodeStyle_internal'].value != 6;
+				window.showH2_checkbox5.parentNode.disabled = window.cusNode_checkbox3.checked && (ppt['nodeStyle_internal'].value == 0 || ppt['nodeStyle_internal'].value == 6);
 				
 				window.albumArtLabelType2.parentNode.disabled = window.flowMode_checkbox.checked;
 			}

@@ -219,18 +219,17 @@ class MenuItems {
 		}));
 
 		menu.newMenu({menuName: 'Quick setup', appendTo: () => mainMenu()});
-		['Traditional...', 'Modern...', 'Ultra-Modern...', 'List view'].forEach((v, i) => menu.newItem({
+		['Traditional', 'Modern', 'Ultra-Modern', 'Clean', 'List view'].forEach((v, i) => menu.newItem({
 			menuName: 'Quick setup',
 			str: v,
 			func: () => panel.set('quickSetup', i),
-			flags: () => i != 9 || this.items.Count ? MF_STRING : MF_GRAYED,
-			separator: i == 2
+			separator: i == 3
 		}));
 
 		['List view + album covers', 'List view + artist photos', 'Album covers', 'Flow mode', 'Always load preset with current \'view\' pattern'].forEach((v, i) => menu.newItem({
 			menuName: 'Quick setup',
 			str: v,
-			func: () => panel.set('quickSetup', i + 4),
+			func: () => panel.set('quickSetup', i + 5),
 			checkItem: () => i == 4 && ppt.presetLoadCurView,
 			separator: i == 1 || i == 2 || i == 3,
 			hide: () => !ppt.albumArtOptionsShow
@@ -564,12 +563,13 @@ class MenuItems {
 				ppt.fixedPlaylist = false;
 				if (ppt.panelSourceMsg) popUpBox.message();
 				break;
-			case 2:
+			case 2: {
 				const fixedPlaylistIndex = plman.FindPlaylist(ppt.fixedPlaylistName);
 				if (fixedPlaylistIndex != -1) ppt.fixedPlaylist = true;
 				ppt.libSource = ppt.fixedPlaylist ? 1 : 0;
 				if (ppt.panelSourceMsg) popUpBox.message();
 				break;
+			}
 		}
 		if (panel.imgView) img.clearCache();
 		lib.searchCache = {};
