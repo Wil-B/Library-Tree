@@ -1,3 +1,11 @@
+# v2.3.1
+
+### Fixed
+Issue with getting album art index character
+
+### Added
+Checks to test if ShowHtmlDialog is supported, with fallback to an alternative where possible (thx to regor)
+
 # v2.3.0
 
 ### Changed
