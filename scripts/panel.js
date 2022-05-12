@@ -157,7 +157,6 @@ class Panel {
 		this.multiProcess = false;
 		this.noDisplay = false;
 		this.multiValueTagSort = '';
-		//this.softSplit = false;
 		this.statistics = false;
 		this.view = '';
 		this.view_ppt.forEach((v, i) => {
@@ -560,7 +559,11 @@ class Panel {
 			cfgWindow = JSON.stringify(cfgWindow);
 			ppt.set('Library Tree Dialog Box', cfgWindow);
 		}
-		popUpBox.config(JSON.stringify([this.dialogGrps, this.dialogFiltGrps, this.defViewPatterns, this.defFilterPatterns]), JSON.stringify(ppt), cfgWindow, ok_callback);
+		if (soFeatures.gecko && soFeatures.clipboard) popUpBox.config(JSON.stringify([this.dialogGrps, this.dialogFiltGrps, this.defViewPatterns, this.defFilterPatterns]), JSON.stringify(ppt), cfgWindow, ok_callback);
+		else {
+			popUpBox.ok = false;
+			$.trace('options dialog isn\'t available with current operating system. All settings in options are available in panel properties. Common settings are on the menu.');	
+		}
 	}
 
 	updateProp(prop, value) {
@@ -743,7 +746,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: Traditional Style';
-						const wsh = popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation);
+						const wsh = soFeatures.gecko && soFeatures.clipboard ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -774,7 +777,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: Modern Style';
-						const wsh = popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation);
+						const wsh = soFeatures.gecko && soFeatures.clipboard ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -805,7 +808,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: Ultra Modern Style';
-						const wsh = popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation);
+						const wsh = soFeatures.gecko && soFeatures.clipboard ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -836,7 +839,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: Clean';
-						const wsh = popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation);
+						const wsh = soFeatures.gecko && soFeatures.clipboard ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -867,7 +870,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: List View';
-						const wsh = popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation);
+						const wsh = soFeatures.gecko && soFeatures.clipboard ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -898,7 +901,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: List View + Album Covers';
-						const wsh = popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation);
+						const wsh = soFeatures.gecko && soFeatures.clipboard ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -929,7 +932,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: List View + Artist Photos';
-						const wsh = popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation);
+						const wsh = soFeatures.gecko && soFeatures.clipboard ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -960,7 +963,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: Album Covers';
-						const wsh = popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation);
+						const wsh = soFeatures.gecko && soFeatures.clipboard ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -986,7 +989,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: Flow Mode';
-						const wsh = popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation);
+						const wsh = soFeatures.gecko && soFeatures.clipboard ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}

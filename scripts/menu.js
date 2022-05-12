@@ -561,13 +561,13 @@ class MenuItems {
 			case 1:
 				ppt.libSource = 2;
 				ppt.fixedPlaylist = false;
-				if (ppt.panelSourceMsg) popUpBox.message();
+				if (ppt.panelSourceMsg && soFeatures.gecko && soFeatures.clipboard) popUpBox.message();
 				break;
 			case 2: {
 				const fixedPlaylistIndex = plman.FindPlaylist(ppt.fixedPlaylistName);
 				if (fixedPlaylistIndex != -1) ppt.fixedPlaylist = true;
 				ppt.libSource = ppt.fixedPlaylist ? 1 : 0;
-				if (ppt.panelSourceMsg) popUpBox.message();
+				if (ppt.panelSourceMsg && soFeatures.gecko && soFeatures.clipboard) popUpBox.message();
 				break;
 			}
 		}

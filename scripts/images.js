@@ -894,12 +894,14 @@ class Images {
 			vertical: !ppt.albumArtFlowMode ? true : ui.h - panel.search.h > ui.w - ui.sbar.w
 		}
 		this.letter.show = ppt.albumArtLetter;
-		if (this.letter.show) {
+		if (this.letter.show && !panel.folderView) {
 			this.letter.no = ppt.albumArtLetterNo;
 			if (ppt.albumArtYearAuto) {
 				const m = panel.view.replace(/#@#.*?#@#/g, '').match(/%.*?%/);
-				const isLeadingDate = /%(<|)date(>|)%/i.test(m[0]);
-				if (isLeadingDate) this.letter.no = 4;
+				if (m) {
+					const isLeadingDate = /%(<|)date(>|)%/i.test(m[0]);
+					if (isLeadingDate) this.letter.no = 4;
+				}
 			}
 		}
 
@@ -1168,7 +1170,7 @@ class Images {
 			}
 			const caption = 'Reset All Images';
 			const prompt = 'This action resets the library tree thumbnail disk cache\n\nContinue?';
-			const wsh = popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation);
+			const wsh = soFeatures.gecko && soFeatures.clipboard ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 			if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 			return;
 		}

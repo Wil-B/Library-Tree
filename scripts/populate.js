@@ -410,7 +410,7 @@ class Populate {
 			case panel.imgView: {
 				let trace1 = false;
 				let trace2 = false;
-				tooltip.SetMaxWidth(800);
+				tooltip.SetMaxWidth(Math.max(ui.w, 800));
 				if (!img.labels.hide) {
 					if (!item.tt) {
 						this.deactivateTooltip();

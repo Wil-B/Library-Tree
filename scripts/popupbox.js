@@ -9,25 +9,16 @@ class PopUpBox {
 	// Methods
 
 	config(cfg, ppt, cfgWindow, ok_callback) {
-		try {
-			utils.ShowHtmlDialog(0, this.configHtmlCode, {
-				data: [cfg, ppt, cfgWindow, ok_callback],
-				resizable: true
-			});
-		} catch (e) {
-			this.ok = false;
-			$.trace('options dialog isn\'t available with current operating system. All settings in options are available in panel properties. Common settings are on the menu.');
-		}
+		utils.ShowHtmlDialog(0, this.configHtmlCode, {
+			data: [cfg, ppt, cfgWindow, ok_callback],
+			resizable: true
+		});
 	}
 
 	confirm(msg_title, msg_content, btn_yes_label, btn_no_label, height_adjust, confirm_callback) {
-		try {
-			utils.ShowHtmlDialog(0, this.confirmHtmlCode, {
-				data: [msg_title, msg_content, btn_yes_label, btn_no_label, height_adjust, confirm_callback]
-			});
-		} catch (e) {
-			return true;
-		}
+		utils.ShowHtmlDialog(0, this.confirmHtmlCode, {
+			data: [msg_title, msg_content, btn_yes_label, btn_no_label, height_adjust, confirm_callback]
+		});
 	}
 
 	getHtmlCode() {
@@ -58,12 +49,9 @@ class PopUpBox {
 	}
 
 	message() {
-		try {
-			utils.ShowHtmlDialog(0, this.messageHtmlCode, {
-				data: [this.window_ok_callback, $.scale],
-			});
-		} catch (e) {
-		}
+		utils.ShowHtmlDialog(0, this.messageHtmlCode, {
+			data: [this.window_ok_callback, $.scale],
+		});
 	}
 
 	window_ok_callback(status, clicked) {
