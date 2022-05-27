@@ -27,7 +27,7 @@ New install or update:
 7) Import the package
 
 ### SUPPORT
-The official discussion thread for library tree is located at [HydrogenAudio](https://hydrogenaud.io/index.php?topic=111060.0) and that's a great place to go for questions and other support issues.
+The official discussion thread for Library Tree is located at [HydrogenAudio](https://hydrogenaud.io/index.php?topic=111060.0) and that's a great place to go for questions and other support issues.
 
 ## Screenshots
 
