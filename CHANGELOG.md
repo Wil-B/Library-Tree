@@ -1,4 +1,4 @@
-# v2.3.2
+# v2.3.2 [unreleased]
 
 ### Added
 - Hover effect (background): frame style in album art view can be set to image border (display tab)
