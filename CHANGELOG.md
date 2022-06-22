@@ -1,3 +1,18 @@
+# v2.3.2
+
+### Added
+- Hover effect (background): frame style in album art view can be set to image border (display tab)
+- Menu configure that opens Spider Monkey Configuration (right click + shift)
+
+### Changed
+- Settings are now always added to the context menu if shift is pressed
+
+### Fixed
+- Reworked feature detection to stop occasional issues with options dialog not opening
+- Minor colour selection and draw issues
+
+<br />
+
 # v2.3.1
 
 ### Fixed
@@ -5,6 +20,8 @@ Issue with getting album art index character
 
 ### Added
 Checks to test if ShowHtmlDialog is supported, with fallback to an alternative where possible (thx to regor)
+
+<br />
 
 # v2.3.0
 
@@ -35,6 +52,7 @@ Checks to test if ShowHtmlDialog is supported, with fallback to an alternative w
     - recycler is unlikely to work: it's used when refreshing images: windows explorer can be used to remove images from the cache instead
     - options dialog may not load: menu now indicates there was a problem & console explains what can be done instead
 - Miscellaneous fixes
+
 <br />
 
 # v2.2.0
