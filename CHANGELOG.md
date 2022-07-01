@@ -1,14 +1,14 @@
 # v2.3.2 [unreleased]
 
 ### Added
-- Hover effect (background): frame style in album art view can be set to image border (display tab)
+- Hover effect (background): frame style in album art view can be displayed as an image border (display tab)
 - Menu configure that opens Spider Monkey Configuration (right click + shift)
 
 ### Changed
 - Settings are now always added to the context menu if shift is pressed
 
 ### Fixed
-- Reworked feature detection to stop occasional issues with options dialog not opening
+- Occasional issues with the options dialog not opening due to the feature checker wrongly reporting Spider Monkey Panel Show HTML Dialog as unsupported. In such cases there is now a confirm to guard against false negatives. Additionally, there is a manual setting in the first panel property
 - Minor colour selection and draw issues
 
 <br />
