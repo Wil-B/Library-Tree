@@ -282,6 +282,7 @@ class Images {
 		}
 		let text = tt1 ? tt1 : '';
 		if (tt2 && panel.lines == 2) text += '\n' + tt2;
+		text = text.replace(/&/g, '&&');
 		item.tt = {
 			text: text,
 			x: x,
@@ -416,7 +417,7 @@ class Images {
 				const nowp = this.checkNowPlaying(item);
 				const grpCol = this.getGrpCol(item, nowp, pop.highlight.text && i == pop.m.i);
 				const lotCol = this.getLotCol(item, nowp, pop.highlight.text && i == pop.m.i);
-				if (!this.labels.hide) this.drawSelBg(gr, cur_img, box_x, box_y, i, nowp || item.sel);
+				this.drawSelBg(gr, cur_img, box_x, box_y, i, nowp || item.sel);
 				this.im.y = this.im.offset + box_y;
 				if (pop.rowStripes && this.labels.right) {
 					if (i % 2 == 0) gr.FillSolidRect(0, box_y + 1, panel.tree.stripe.w, this.row.h, ui.col.bg1);
@@ -473,11 +474,15 @@ class Images {
 				}
 				this.drawItemOverlay(gr, item, x1, y1, iw, ih);
 				if (i == pop.m.i) {
-					if (pop.highlight.row == 3 || pop.highlight.row == 2 && (this.labels.overlay || this.labels.hide)) {
-						this.drawFrame(gr, box_x, box_y, ui.col.frameImg, !this.labels.overlay && !this.labels.hide ? 'stnd' : 'thick');
+					if (pop.highlight.row == 3 || pop.highlight.row == 2 && (((this.labels.overlay || this.labels.hide) && this.style.image != 2))) {
+						if (!ppt.frameImage) this.drawFrame(gr, box_x, box_y, ui.col.frameImg, !this.labels.overlay && !this.labels.hide ? 'stnd' : 'thick');
+						else this.drawImageFrame(gr, x1, y1, iw, ih, ui.col.frameImg);
 					} else if (pop.highlight.row == 1 && !sbar.draw_timer) gr.FillSolidRect(ui.l.w, y1, ui.sz.sideMarker, this.im.w, ui.col.sideMarker);
 				}
-				if ((this.labels.overlay || this.labels.hide) && item.sel) this.drawFrame(gr, box_x, box_y, ui.col.imgBgSel, 'thick');
+				if (item.sel) {
+					if (this.labels.overlay && this.style.image != 2) this.drawFrame(gr, box_x, box_y, ui.col.frameImgSel, 'thick');
+					else if (this.labels.hide && pop.highlight.row == 3 && ppt.frameImage) this.drawImageFrame(gr, x1, y1, iw, ih, ui.col.frameImgSel);
+				}
 				if (!this.labels.hide) {
 					const x = box_x + this.text.x;
 					let type = 0;
@@ -535,6 +540,14 @@ class Images {
 		gr.DrawRect(x, y, w, h, l_w, col);
 	}
 
+	drawImageFrame(gr, x, y, w, h, col) {
+		const l_w = 3;
+		gr.SetSmoothingMode(2);
+		if (this.style.image != 2) gr.DrawRect(x, y, w - l_w / 2, h - l_w / 2, l_w, col);
+		else gr.DrawEllipse(x, y, w - l_w / 2, h - l_w / 2, l_w, col);
+		gr.SetSmoothingMode(0);
+	}
+
 	drawItemOverlay(gr, item, x, y, w) {
 		if (item.root) return;
 		switch (ppt.itemOverlayType) {
@@ -580,11 +593,12 @@ class Images {
 	}
 
 	drawSelBg(gr, cur_img, box_x, box_y, i, nowpOrSel) {
+		if (this.labels.hide && (this.style.image != 2 || pop.highlight.row == 3 && ppt.frameImage)) return;
 		let col, x, y, w, h;
 		switch (true) {
 			case nowpOrSel:
 				col = ui.col.imgBgSel;
-				switch (this.labels.overlay) {
+				switch (this.labels.overlay || this.labels.hide) {
 					case true:
 						x = box_x + Math.round((this.box.w - (cur_img ? cur_img.Width : this.im.w)) / 2);
 						y = box_y + (cur_img ? 2 + this.im.w - cur_img.Height : 2)
@@ -599,12 +613,19 @@ class Images {
 						break
 				}
 				break;
-			case pop.highlight.row == 2 && i == pop.m.i && !this.labels.overlay:
-				col = ui.col.bg_h
-				x = !this.labels.right ? box_x : ui.sz.pad;
-				y = box_y + (this.labels.bottom ? (!this.labels.right ? 2 : 2) : 2);
-				w = !this.labels.right ? this.box.w - 2 : panel.tree.sel.w;
-				h = this.box.h + (this.labels.bottom ? (!this.labels.right ? 0 : -3) : -3);
+			case pop.highlight.row == 2 && i == pop.m.i:
+				col = ui.col.bg_h;
+				if ((this.labels.overlay || this.labels.hide) && this.style.image == 2) {
+					x = box_x + Math.round((this.box.w - (cur_img ? cur_img.Width : this.im.w)) / 2);
+					y = box_y + (cur_img ? 2 + this.im.w - cur_img.Height : 2)
+					w = cur_img ? cur_img.Width : this.im.w;
+					h = cur_img ? cur_img.Height : this.im.w;
+				} else {
+					x = !this.labels.right ? box_x : ui.sz.pad;
+					y = box_y + (!this.labels.right ? 2 : 1);
+					w = !this.labels.right ? this.box.w : panel.tree.sel.w;
+					h = this.box.h;
+				}
 				break;
 		}
 		gr.FillSolidRect(x, y, w, h, col);
@@ -1170,7 +1191,7 @@ class Images {
 			}
 			const caption = 'Reset All Images';
 			const prompt = 'This action resets the library tree thumbnail disk cache\n\nContinue?';
-			const wsh = soFeatures.gecko && soFeatures.clipboard ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+			const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 			if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 			return;
 		}

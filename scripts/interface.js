@@ -541,7 +541,7 @@ class UserInterface {
 		if (this.col.nowp === '') this.col.nowp = !this.img.blurDark ? this.col.text_h :  RGB(128, 228, 0);
 
 		if (this.col.bg_h === '') {
-			this.col.bg_h = ppt.highLightRow == 3 ? (this.img.blurDark ? 0x24000000 : 0x1E30AFED) : this.img.blurDark ? 0x19ffffff : this.img.blurLight || lightBg ? 0x19000000 : 0x19ffffff;
+			this.col.bg_h = ppt.highLightRow > 2 ? (this.img.blurDark ? 0x24000000 : 0x1E30AFED) : this.img.blurDark ? 0x19ffffff : this.img.blurLight || lightBg ? 0x19000000 : 0x19ffffff;
 			this.col.bgSel_h = this.col.bg_h;
 			if (this.getColSat(this.col.bg) < 150 && !this.img.blurDark && !this.img.blurLight && ppt.highLightRow != 3) {
 				this.col.bg_h = this.getBlend(this.col.bg == 0 ? 0xff000000 : this.col.bg, this.col.bgSel, 0.55);
@@ -552,6 +552,9 @@ class UserInterface {
 		if (this.col.bgSelframe === '') {
 			const bgSelOpaque = $.RGBAtoRGB(this.col.bgSel, this.img.blurDark ? RGB(50, 50, 50) : this.img.blurLight ? RGB(232, 232, 232) : this.col.bg);
 			this.col.bgSelframe = this.setBrightness(bgSelOpaque, this.getSelCol(bgSelOpaque == 0 ? 0xff000000 : bgSelOpaque, true) == 50 ? -7 : 7);
+			this.col.frameImgSel = this.col.bgSel & 0xb0ffffff;
+		} else {
+			this.col.frameImgSel = this.col.bgSelframe;
 		}
 
 		if (this.col.frame === '') {
@@ -607,7 +610,7 @@ class UserInterface {
 			this.style.pen = c_pen;
 			this.style.pen_c = c_pen_c;
 			this.col.search = this.col.txt_box = c_txt_box;
-			this.col.bg_h = ppt.highLightRow == 3 ? (this.img.blurDark ? 0x24000000 : 0x1E30AFED) : this.img.blurDark ? 0x19ffffff : this.img.blurLight || lightBg ? 0x19000000 : 0x19ffffff;
+			this.col.bg_h = ppt.highLightRow > 2 ? (this.img.blurDark ? 0x24000000 : 0x1E30AFED) : this.img.blurDark ? 0x19ffffff : this.img.blurLight || lightBg ? 0x19000000 : 0x19ffffff;
 			this.col.bgSel_h = this.col.bg_h;
 			if (this.getColSat(this.col.bg) < 150 && !this.img.blurDark && !this.img.blurLight && !ppt.highLightRow != 3) {
 				this.col.bg_h = this.getBlend(this.col.bg == 0 ? 0xff000000 : this.col.bg, this.col.bgSel, 0.55);
@@ -629,7 +632,7 @@ class UserInterface {
 	}
 
 	getOpaque() {
-		return ppt.fullLineSelection && (ppt.highLightRow == 3 || ppt.sbarShow == 1) || !this.style.bg || this.img.isBlur || ui.img.bg ? false : true;
+		return ppt.fullLineSelection && (ppt.highLightRow > 2 || ppt.sbarShow == 1) || !this.style.bg || this.img.isBlur || ui.img.bg ? false : true;
 	}
 
 	getRandomCol() {

@@ -399,6 +399,7 @@ class Populate {
 		switch (true) {
 			case !panel.imgView: {
 				text = (!panel.colMarker ? item.name : item.name.replace(/@!#.*?@!#/g, '')) + (!this.countsRight ? item.count : '');
+				text = text.replace(/&/g, '&&');
 				if (text != tooltip.Text) this.deactivateTooltip();
 				const trace = item.tt && item.tt.needed && x >= item.tt.x && x <= item.tt.x + item.tt.w && y >= item.tt.y && y <= item.tt.y + ui.row.h;
 				if (!trace) {
@@ -410,7 +411,6 @@ class Populate {
 			case panel.imgView: {
 				let trace1 = false;
 				let trace2 = false;
-				tooltip.SetMaxWidth(Math.max(ui.w, 800));
 				if (!img.labels.hide) {
 					if (!item.tt) {
 						this.deactivateTooltip();
@@ -419,6 +419,7 @@ class Populate {
 					trace1 = x >= item.tt.x && x <= item.tt.x + item.tt.w && y >= item.tt.y1 && y <= item.tt.y1 + img.text.h;
 					trace2 = item.tt.y2 == -1 ? false : x >= item.tt.x && x <= item.tt.x + item.tt.w && y >= item.tt.y2 && y <= item.tt.y2 + img.text.h;
 					text = trace1 || trace2 ? item.tt.text : '';
+					text = text.replace(/&/g, '&&');
 					if (text != tooltip.Text) this.deactivateTooltip();
 					if (!trace1 && !trace2 || !item.tt[1] && !item.tt[2]) {
 						this.deactivateTooltip();
@@ -427,6 +428,7 @@ class Populate {
 				} else {
 					text = panel.lines == 2 ? !ppt.albumArtFlipLabels ? item.grp + '\n' + item.lot : item.lot + '\n' + item.grp : item.grp;
 					if (panel.colMarker) text = text.replace(/@!#.*?@!#/g, '');
+					text = text.replace(/&/g, '&&');
 					if (text != tooltip.Text) this.deactivateTooltip();
 				}
 				break;
@@ -852,7 +854,7 @@ class Populate {
 	}
 
 	drawNode(gr, item, x, y, parent, hover, sel) {
-		const selFullLine = sel && this.fullLineSelection;
+		const selCol = sel && this.fullLineSelection && this.highlight.row;
 		const y2 = Math.round(y);
 		switch (this.nodeStyle) {
 			case 0:
@@ -866,16 +868,16 @@ class Populate {
 				if (!this.highlight.row && this.fullLineSelection) x += ui.l.w;
 				if (parent) {
 					if (hover) {
-						gr.DrawString(ui.icon.expand, ui.icon.font, selFullLine ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
-						if (this.nodeStyle == 2) gr.DrawString(ui.icon.expand, ui.icon.font, selFullLine ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x + 1, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
-					} else gr.DrawString(ui.icon.expand, ui.icon.font, !selFullLine ? ui.col.icon_c : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+						gr.DrawString(ui.icon.expand, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+						if (this.nodeStyle == 2) gr.DrawString(ui.icon.expand, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x + 1, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+					} else gr.DrawString(ui.icon.expand, ui.icon.font, !selCol ? ui.col.icon_c : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
 				} else {
 					if (hover) {
-						gr.DrawString(ui.icon.collapse, ui.icon.font, selFullLine ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_c, x - ui.icon.offset, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
-						if (this.nodeStyle == 2) gr.DrawString(ui.icon.collapse, ui.icon.font, selFullLine ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_c, x - ui.icon.offset, y2 + 1, panel.tree.w - x, ui.row.h, panel.s_lc);
+						gr.DrawString(ui.icon.collapse, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_c, x - ui.icon.offset, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+						if (this.nodeStyle == 2) gr.DrawString(ui.icon.collapse, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_c, x - ui.icon.offset, y2 + 1, panel.tree.w - x, ui.row.h, panel.s_lc);
 					} else {
-						gr.DrawString(ui.icon.collapse, ui.icon.font, !selFullLine ? ui.col.icon_e : ui.col.textSel, x - ui.icon.offset, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
-						if (this.nodeStyle == 2) gr.DrawString(ui.icon.collapse, ui.icon.font, !selFullLine ? ui.col.icon_e : ui.col.textSel, x - ui.icon.offset, y2 + 1, panel.tree.w - x, ui.row.h, panel.s_lc);
+						gr.DrawString(ui.icon.collapse, ui.icon.font, !selCol ? ui.col.icon_e : ui.col.textSel, x - ui.icon.offset, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+						if (this.nodeStyle == 2) gr.DrawString(ui.icon.collapse, ui.icon.font, !selCol ? ui.col.icon_e : ui.col.textSel, x - ui.icon.offset, y2 + 1, panel.tree.w - x, ui.row.h, panel.s_lc);
 
 					}
 				}
@@ -886,23 +888,23 @@ class Populate {
 				gr.SetSmoothingMode(4);
 				if (parent) {
 					if (hover) {
-						if (this.highlight.node) gr.DrawString(ui.icon.expand2, ui.icon.font, !selFullLine ? ui.col.icon_h : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
-						else gr.DrawString(ui.icon.expand2, ui.icon.font, !selFullLine ? ui.col.icon_e & 0xCFffffff : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
-					} else gr.DrawString(ui.icon.expand, ui.icon.font, !selFullLine ? ui.col.icon_c : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
-				} else if (hover && this.highlight.node) gr.DrawImage(!selFullLine ? this.triangle.highlight : this.triangle.select, x - ui.icon.offset, y3, this.sy_sz, this.sy_sz, 0, 0, this.triangle.highlight.Width, this.triangle.highlight.Height);
-				else gr.DrawImage(!selFullLine ? this.triangle.expand : this.triangle.select, x - ui.icon.offset, y3, this.sy_sz, this.sy_sz, 0, 0, this.triangle.expand.Width, this.triangle.expand.Height);
+						if (this.highlight.node) gr.DrawString(ui.icon.expand2, ui.icon.font, !selCol ? ui.col.icon_h : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+						else gr.DrawString(ui.icon.expand2, ui.icon.font, !selCol ? ui.col.icon_e & 0xCFffffff : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+					} else gr.DrawString(ui.icon.expand, ui.icon.font, !selCol ? ui.col.icon_c : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+				} else if (hover && this.highlight.node) gr.DrawImage(!selCol ? this.triangle.highlight : this.triangle.select, x - ui.icon.offset, y3, this.sy_sz, this.sy_sz, 0, 0, this.triangle.highlight.Width, this.triangle.highlight.Height);
+				else gr.DrawImage(!selCol ? this.triangle.expand : this.triangle.select, x - ui.icon.offset, y3, this.sy_sz, this.sy_sz, 0, 0, this.triangle.expand.Width, this.triangle.expand.Height);
 				gr.SetSmoothingMode(0);
 				break;
 			}
 			case 4:
 				if (parent) {
 					if (hover) {
-						gr.DrawString(ui.icon.expand, ui.icon.font, selFullLine ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x, y2, panel.tree.w - x, ui.row.h - 1, panel.s_lc);
-					} else gr.DrawString(ui.icon.expand, ui.icon.font, !selFullLine ? ui.col.icon_c : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h - 1, panel.s_lc);
+						gr.DrawString(ui.icon.expand, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x, y2, panel.tree.w - x, ui.row.h - 1, panel.s_lc);
+					} else gr.DrawString(ui.icon.expand, ui.icon.font, !selCol ? ui.col.icon_c : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h - 1, panel.s_lc);
 				} else {
 					if (hover) {
-						gr.DrawString(ui.icon.collapse, ui.icon.font, selFullLine ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_c, x - ui.icon.offset, y2, panel.tree.w - x, ui.row.h - 1, panel.s_lc);
-					} else gr.DrawString(ui.icon.collapse, ui.icon.font, !selFullLine ? ui.col.icon_e : ui.col.textSel, x - ui.icon.offset, y2, panel.tree.w - x, ui.row.h - 1, panel.s_lc);
+						gr.DrawString(ui.icon.collapse, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_c, x - ui.icon.offset, y2, panel.tree.w - x, ui.row.h - 1, panel.s_lc);
+					} else gr.DrawString(ui.icon.collapse, ui.icon.font, !selCol ? ui.col.icon_e : ui.col.textSel, x - ui.icon.offset, y2, panel.tree.w - x, ui.row.h - 1, panel.s_lc);
 				}
 				break;
 			case 6:
@@ -913,12 +915,12 @@ class Populate {
 			default:
 				if (parent) {
 					if (hover) {
-						gr.DrawString(ui.icon.expand, ui.icon.font, selFullLine ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x, y + this.iconVerticalPad, panel.tree.w - x, ui.row.h, panel.s_lc);
-					} else gr.DrawString(ui.icon.expand, ui.icon.font, !selFullLine ? ui.col.icon_c : ui.col.textSel, x, y + this.iconVerticalPad, panel.tree.w - x, ui.row.h, panel.s_lc);
+						gr.DrawString(ui.icon.expand, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x, y + this.iconVerticalPad, panel.tree.w - x, ui.row.h, panel.s_lc);
+					} else gr.DrawString(ui.icon.expand, ui.icon.font, !selCol ? ui.col.icon_c : ui.col.textSel, x, y + this.iconVerticalPad, panel.tree.w - x, ui.row.h, panel.s_lc);
 				} else {
 					if (hover) {
-						gr.DrawString(ui.icon.collapse, ui.icon.font, selFullLine ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_c, x - ui.icon.offset, y + this.iconVerticalPad, panel.tree.w - x, ui.row.h, panel.s_lc);
-					} else gr.DrawString(ui.icon.collapse, ui.icon.font, !selFullLine ? ui.col.icon_e : ui.col.textSel, x - ui.icon.offset, y + this.iconVerticalPad, panel.tree.w - x, ui.row.h, panel.s_lc);
+						gr.DrawString(ui.icon.collapse, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_c, x - ui.icon.offset, y + this.iconVerticalPad, panel.tree.w - x, ui.row.h, panel.s_lc);
+					} else gr.DrawString(ui.icon.collapse, ui.icon.font, !selCol ? ui.col.icon_e : ui.col.textSel, x - ui.icon.offset, y + this.iconVerticalPad, panel.tree.w - x, ui.row.h, panel.s_lc);
 				}
 				break;
 		}

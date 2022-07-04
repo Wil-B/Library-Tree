@@ -325,6 +325,7 @@ function on_size() {
 	ui.h = window.Height;
 	if (!ui.w || !ui.h) return;
 	pop.deactivateTooltip();
+	tooltip.SetMaxWidth(Math.max(ui.w, 800));
 	ui.blurReset();
 	ui.getFont();
 	panel.on_size();

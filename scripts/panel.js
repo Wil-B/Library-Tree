@@ -138,6 +138,17 @@ class Panel {
 		this.search.w = ppt.searchShow && (ppt.filterShow || ppt.settingsShow) ? this.filter.x - this.search.x - 11 : ui.w - ui.sz.marginSearch - Math.round(ui.row.h * 0.75) - this.search.x + 1;
 	}
 
+	clear(type) {
+		if (type == 'views' || type == 'both') {
+			for (let i = 0; i < 100; i++) {
+				ppt.set(`View ${$.padNumber(i, 2)}: Name // Pattern`, null);
+			}
+		}
+		if (type == 'filters' || type == 'both') {
+			for (let i = 0; i < 100; i++) ppt.set(`Filter ${$.padNumber(i, 2)}: Name // Query`, null);
+		}
+	}
+
 	forcePaint() {
 		window.RepaintRect(0, this.paint_y, ui.w, ui.h - this.paint_y + 1, true);
 	}
@@ -325,6 +336,12 @@ class Panel {
 		this.menu = this.grp.map(name);
 	}
 
+	getFilterIndex(arr, name, type) {
+		let findFilterIndex = arr.findIndex(v => v.name === name && v.type === type);
+		if (findFilterIndex != -1) ppt.filterBy = findFilterIndex;
+		return findFilterIndex;
+	}
+
 	getFilters() {
 		let pt = [
 			['Filter 01: Name // Query', 'Filter // Button Name'],
@@ -401,6 +418,14 @@ class Panel {
 		// move filter button to end
 		this.dialogFiltGrps.push(this.dialogFiltGrps.shift());
 		this.defFilterPatterns.push(this.defFilterPatterns.shift());
+	}
+
+	getViewIndex(arr, name, type) {
+		let findViewIndex = arr.findIndex(v => {
+			return v.name.trim() === name && v.type.trimStart() === type;
+		})
+		if (findViewIndex != -1) ppt.viewBy = findViewIndex;
+		return findViewIndex;
 	}
 
 	getViews() {
@@ -481,20 +506,6 @@ class Panel {
 		this.view_ppt.push(this.view_ppt.shift());
 	}
 
-	getFilterIndex(arr, name, type) {
-		let findFilterIndex = arr.findIndex(v => v.name === name && v.type === type);
-		if (findFilterIndex != -1) ppt.filterBy = findFilterIndex;
-		return findFilterIndex;
-	}
-
-	getViewIndex(arr, name, type) {
-		let findViewIndex = arr.findIndex(v => {
-			return v.name.trim() === name && v.type.trimStart() === type;
-		})
-		if (findViewIndex != -1) ppt.viewBy = findViewIndex;
-		return findViewIndex;
-	}
-
 	load() {
 		ppt.nodeLines = true;
 		ppt.nodeCounts = 1;
@@ -503,156 +514,6 @@ class Panel {
 		ppt.filterShow = true;
 		ppt.settingsShow = true
 		window.Reload();
-	}
-
-	open(page) {
-		const ok_callback = (new_cfg, new_ppt, type, new_cfgWindow) => {
-			if (new_cfg) {
-				let cfg = $.jsonParse(new_cfg, []);
-				this.clear('both');
-				let i = cfg[0].length;
-				while (i--)
-					if (!cfg[0][i].type) cfg[0].splice(i, 1);
-				cfg[0].forEach((v, i) => {
-					const nm = v.type ? v.name + (v.menu ? ' // ' : ' /hide/ ') + v.type : null;
-					ppt.set(v.type != 'Pattern Not Configurable' ? `View ${$.padNumber(i + 2, 2)}: Name // Pattern` : `View 01: Name // Pattern`, nm);
-				});
-				i = cfg[1].length;
-				while (i--)
-					if (!cfg[1][i].type) cfg[1].splice(i, 1);
-				cfg[1].forEach((v, i) => {
-					const nm = v.type ? v.name + (v.menu ? ' // ' : ' /hide/ ') + v.type : null;
-					ppt.set(v.type != 'Button Name' ? `Filter ${$.padNumber(i + 2, 2)}: Name // Query` : `Filter 01: Name // Query`, nm);
-				});
-				const view_name = this.grp[ppt.viewBy].name;
-				const view_type = this.grp[ppt.viewBy].type.trimStart();
-				const filter_name = this.filter.mode[ppt.filterBy].name;
-				const filter_type = this.filter.mode[ppt.filterBy].type;
-				this.getViews();
-				this.getFilters();
-				this.getFields(ppt.viewBy, ppt.filterBy, true);
-				if (this.getViewIndex(this.grp, view_name, view_type) == -1 || this.getFilterIndex(this.filter.mode, filter_name, filter_type) == -1) {
-					lib.logTree();
-					window.Reload();
-				} else this.getFields(ppt.viewBy, ppt.filterBy);
-			}
-
-			if (new_ppt) this.updateProp($.jsonParse(new_ppt, {}), 'value');
-
-			if (new_cfgWindow) ppt.set('Library Tree Dialog Box', new_cfgWindow);
-
-			if (type == 'reset') {
-				this.updateProp(ppt, 'default_value');
-			}
-
-			if (new_cfg || new_ppt || type == 'reset') {
-				men.refreshMainMenu();
-				men.refreshFilterMenu();
-			}
-		}
-
-		this.getViews();
-		let cfgWindow = ppt.get('Library Tree Dialog Box');
-		if (page !== undefined) {
-			cfgWindow = $.jsonParse(cfgWindow);
-			cfgWindow.page = page;
-			cfgWindow = JSON.stringify(cfgWindow);
-			ppt.set('Library Tree Dialog Box', cfgWindow);
-		}
-		if (soFeatures.gecko && soFeatures.clipboard) popUpBox.config(JSON.stringify([this.dialogGrps, this.dialogFiltGrps, this.defViewPatterns, this.defFilterPatterns]), JSON.stringify(ppt), cfgWindow, ok_callback);
-		else {
-			popUpBox.ok = false;
-			$.trace('options dialog isn\'t available with current operating system. All settings in options are available in panel properties. Common settings are on the menu.');	
-		}
-	}
-
-	updateProp(prop, value) {
-		Object.entries(prop).forEach(v => {
-			ppt[v[0].replace('_internal', '')] = v[1][value]
-		});
-
-		img.asyncBypass = Date.now();
-		img.preLoadItems = [];
-		clearInterval(img.timer.preLoad);
-		img.timer.preLoad = null;
-		pop.autoPlay.send = ppt.autoPlay;
-		pop.autoPlay = {
-			click: ppt.clickAction < 2 ? false : ppt.clickAction,
-			send: ppt.autoPlay
-		}
-		pop.autoFill = {
-			mouse: ppt.clickAction == 1 ? true : false,
-			key: ppt.keyAction
-		}
-		ppt.autoExpandLimit = Math.round(ppt.autoExpandLimit);
-		if (isNaN(ppt.autoExpandLimit)) ppt.autoExpandLimit = 350;
-		ppt.autoExpandLimit = $.clamp(ppt.autoExpandLimit, 10, 1000);
-		ppt.margin = Math.round(ppt.margin);
-		if (isNaN(ppt.margin)) ppt.margin = 8 * $.scale;
-		ppt.margin = $.clamp(ppt.margin, 0, 100);
-		ppt.treeIndent = Math.round(ppt.treeIndent);
-		if (isNaN(ppt.treeIndent)) ppt.treeIndent = 19 * $.scale;
-		ppt.treeIndent = $.clamp(ppt.treeIndent, 0, 100);
-
-		lib.checkView();
-		lib.logTree();
-		img.setRoot();
-		ppt.albumArtLetterNo = Math.max(ppt.albumArtLetterNo, 1);
-		ppt.zoomImg = Math.round($.clamp(ppt.zoomImg, 10, 500));
-
-		let o = !this.imgView ? 'verticalPad' : 'verticalAlbumArtPad';
-		if (!ppt[o]) ppt[o] = !this.imgView ? 3 : 2;
-		ppt[o] = Math.round(ppt[o]);
-		if (isNaN(ppt[o])) ppt[o] = !this.imgView ? 3 : 2;
-		ppt[o] = $.clamp(ppt[o], 0, !this.imgView ? 100 : 20);
-
-		ppt.iconCustom = ppt.iconCustom.trim();
-		ui.setNodes();
-		sbar.active = true;
-		sbar.duration = {
-			drag: 200,
-			inertia: ppt.durationTouchFlick,
-			full: ppt.durationScroll
-		};
-		sbar.duration.scroll = Math.round(sbar.duration.full * 0.8);
-		sbar.duration.step = Math.round(sbar.duration.full * 2 / 3);
-		sbar.duration.bar = sbar.duration.full;
-		sbar.duration.barFast = sbar.duration.step;
-		if (!ppt.butCustIconFont.length) ppt.butCustIconFont = 'Segoe UI Symbol';
-		ui.setSbar();
-		on_colours_changed();
-		this.setRootName();
-		but.setSbarIcon();
-		pop.setValues();
-		pop.inlineRoot = ppt.rootNode && ppt.inlineRoot;
-
-		ui.getFont();
-		this.on_size();
-		this.tree.y = this.search.h;
-		but.createImages();
-		but.refresh(true);
-		find.on_size();
-		pop.createImages();
-
-		if (ppt.highLightNowplaying) {
-			pop.getNowplaying();
-			pop.nowPlayingShow()
-		}
-
-		if (panel.imgView && pop.tree.length) {
-			img.trimCache(pop.tree[0].key);
-			img.metrics();
-		}
-		lib.rootNodes(1, true);
-		this.pn_h_auto = ppt.pn_h_auto && ppt.rootNode;
-		if (this.pn_h_auto) {
-			window.MaxHeight = window.MinHeight = ppt.pn_h;
-		}
-		if (panel.pn_h_auto && !panel.imgView && ppt.pn_h == ppt.pn_h_min && this.tree[0]) this.clearChild(this.tree[0]);
-		pop.checkAutoHeight();
-		if (sbar.scroll > sbar.max_scroll) sbar.checkScroll(sbar.max_scroll);
-		window.Repaint();
-
 	}
 
 	on_size(fontChanged) {
@@ -710,6 +571,67 @@ class Panel {
 		}
 	}
 
+	open(page) {
+		const ok_callback = (new_cfg, new_ppt, type, new_cfgWindow) => {
+			if (new_cfg) {
+				let cfg = $.jsonParse(new_cfg, []);
+				this.clear('both');
+				let i = cfg[0].length;
+				while (i--)
+					if (!cfg[0][i].type) cfg[0].splice(i, 1);
+				cfg[0].forEach((v, i) => {
+					const nm = v.type ? v.name + (v.menu ? ' // ' : ' /hide/ ') + v.type : null;
+					ppt.set(v.type != 'Pattern Not Configurable' ? `View ${$.padNumber(i + 2, 2)}: Name // Pattern` : `View 01: Name // Pattern`, nm);
+				});
+				i = cfg[1].length;
+				while (i--)
+					if (!cfg[1][i].type) cfg[1].splice(i, 1);
+				cfg[1].forEach((v, i) => {
+					const nm = v.type ? v.name + (v.menu ? ' // ' : ' /hide/ ') + v.type : null;
+					ppt.set(v.type != 'Button Name' ? `Filter ${$.padNumber(i + 2, 2)}: Name // Query` : `Filter 01: Name // Query`, nm);
+				});
+				const view_name = this.grp[ppt.viewBy].name;
+				const view_type = this.grp[ppt.viewBy].type.trimStart();
+				const filter_name = this.filter.mode[ppt.filterBy].name;
+				const filter_type = this.filter.mode[ppt.filterBy].type;
+				this.getViews();
+				this.getFilters();
+				this.getFields(ppt.viewBy, ppt.filterBy, true);
+				if (this.getViewIndex(this.grp, view_name, view_type) == -1 || this.getFilterIndex(this.filter.mode, filter_name, filter_type) == -1) {
+					lib.logTree();
+					window.Reload();
+				} else this.getFields(ppt.viewBy, ppt.filterBy);
+			}
+
+			if (new_ppt) this.updateProp($.jsonParse(new_ppt, {}), 'value');
+
+			if (new_cfgWindow) ppt.set('Library Tree Dialog Box', new_cfgWindow);
+
+			if (type == 'reset') {
+				this.updateProp(ppt, 'default_value');
+			}
+
+			if (new_cfg || new_ppt || type == 'reset') {
+				men.refreshMainMenu();
+				men.refreshFilterMenu();
+			}
+		}
+
+		this.getViews();
+		let cfgWindow = ppt.get('Library Tree Dialog Box');
+		if (page !== undefined) {
+			cfgWindow = $.jsonParse(cfgWindow);
+			cfgWindow.page = page;
+			cfgWindow = JSON.stringify(cfgWindow);
+			ppt.set('Library Tree Dialog Box', cfgWindow);
+		}
+		if (popUpBox.isHtmlDialogSupported()) popUpBox.config(JSON.stringify([this.dialogGrps, this.dialogFiltGrps, this.defViewPatterns, this.defFilterPatterns]), JSON.stringify(ppt), cfgWindow, ok_callback);
+		else {
+			popUpBox.ok = false;
+			$.trace('options dialog isn\'t available with current operating system. All settings in options are available in panel properties. Common settings are on the menu.');	
+		}
+	}
+
 	searchPaint() {
 		window.RepaintRect(0, 0, ui.w, this.search.h);
 	}
@@ -746,7 +668,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: Traditional Style';
-						const wsh = soFeatures.gecko && soFeatures.clipboard ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -777,7 +699,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: Modern Style';
-						const wsh = soFeatures.gecko && soFeatures.clipboard ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -808,7 +730,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: Ultra Modern Style';
-						const wsh = soFeatures.gecko && soFeatures.clipboard ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -839,7 +761,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: Clean';
-						const wsh = soFeatures.gecko && soFeatures.clipboard ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -870,7 +792,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: List View';
-						const wsh = soFeatures.gecko && soFeatures.clipboard ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -901,7 +823,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: List View + Album Covers';
-						const wsh = soFeatures.gecko && soFeatures.clipboard ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -932,7 +854,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: List View + Artist Photos';
-						const wsh = soFeatures.gecko && soFeatures.clipboard ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -963,7 +885,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: Album Covers';
-						const wsh = soFeatures.gecko && soFeatures.clipboard ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -989,7 +911,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: Flow Mode';
-						const wsh = soFeatures.gecko && soFeatures.clipboard ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -1104,15 +1026,92 @@ class Panel {
 		window.RepaintRect(0, this.paint_y, ui.w, ui.h - this.paint_y + 1);
 	}
 
-	clear(type) {
-		if (type == 'views' || type == 'both') {
-			for (let i = 0; i < 100; i++) {
-				ppt.set(`View ${$.padNumber(i, 2)}: Name // Pattern`, null);
-			}
+	updateProp(prop, value) {
+		Object.entries(prop).forEach(v => {
+			ppt[v[0].replace('_internal', '')] = v[1][value]
+		});
+
+		img.asyncBypass = Date.now();
+		img.preLoadItems = [];
+		clearInterval(img.timer.preLoad);
+		img.timer.preLoad = null;
+		pop.autoPlay.send = ppt.autoPlay;
+		pop.autoPlay = {
+			click: ppt.clickAction < 2 ? false : ppt.clickAction,
+			send: ppt.autoPlay
 		}
-		if (type == 'filters' || type == 'both') {
-			for (let i = 0; i < 100; i++) ppt.set(`Filter ${$.padNumber(i, 2)}: Name // Query`, null);
+		pop.autoFill = {
+			mouse: ppt.clickAction == 1 ? true : false,
+			key: ppt.keyAction
 		}
+		ppt.autoExpandLimit = Math.round(ppt.autoExpandLimit);
+		if (isNaN(ppt.autoExpandLimit)) ppt.autoExpandLimit = 350;
+		ppt.autoExpandLimit = $.clamp(ppt.autoExpandLimit, 10, 1000);
+		ppt.margin = Math.round(ppt.margin);
+		if (isNaN(ppt.margin)) ppt.margin = 8 * $.scale;
+		ppt.margin = $.clamp(ppt.margin, 0, 100);
+		ppt.treeIndent = Math.round(ppt.treeIndent);
+		if (isNaN(ppt.treeIndent)) ppt.treeIndent = 19 * $.scale;
+		ppt.treeIndent = $.clamp(ppt.treeIndent, 0, 100);
+
+		lib.checkView();
+		lib.logTree();
+		img.setRoot();
+		ppt.albumArtLetterNo = Math.max(ppt.albumArtLetterNo, 1);
+		ppt.zoomImg = Math.round($.clamp(ppt.zoomImg, 10, 500));
+
+		let o = !this.imgView ? 'verticalPad' : 'verticalAlbumArtPad';
+		if (!ppt[o]) ppt[o] = !this.imgView ? 3 : 2;
+		ppt[o] = Math.round(ppt[o]);
+		if (isNaN(ppt[o])) ppt[o] = !this.imgView ? 3 : 2;
+		ppt[o] = $.clamp(ppt[o], 0, !this.imgView ? 100 : 20);
+
+		ppt.iconCustom = ppt.iconCustom.trim();
+		ui.setNodes();
+		sbar.active = true;
+		sbar.duration = {
+			drag: 200,
+			inertia: ppt.durationTouchFlick,
+			full: ppt.durationScroll
+		};
+		sbar.duration.scroll = Math.round(sbar.duration.full * 0.8);
+		sbar.duration.step = Math.round(sbar.duration.full * 2 / 3);
+		sbar.duration.bar = sbar.duration.full;
+		sbar.duration.barFast = sbar.duration.step;
+		if (!ppt.butCustIconFont.length) ppt.butCustIconFont = 'Segoe UI Symbol';
+		ui.setSbar();
+		on_colours_changed();
+		this.setRootName();
+		but.setSbarIcon();
+		pop.setValues();
+		pop.inlineRoot = ppt.rootNode && ppt.inlineRoot;
+
+		ui.getFont();
+		this.on_size();
+		this.tree.y = this.search.h;
+		but.createImages();
+		but.refresh(true);
+		find.on_size();
+		pop.createImages();
+
+		if (ppt.highLightNowplaying) {
+			pop.getNowplaying();
+			pop.nowPlayingShow()
+		}
+
+		if (panel.imgView && pop.tree.length) {
+			img.trimCache(pop.tree[0].key);
+			img.metrics();
+		}
+		lib.rootNodes(1, true);
+		this.pn_h_auto = ppt.pn_h_auto && ppt.rootNode;
+		if (this.pn_h_auto) {
+			window.MaxHeight = window.MinHeight = ppt.pn_h;
+		}
+		if (panel.pn_h_auto && !panel.imgView && ppt.pn_h == ppt.pn_h_min && this.tree[0]) this.clearChild(this.tree[0]);
+		pop.checkAutoHeight();
+		if (sbar.scroll > sbar.max_scroll) sbar.checkScroll(sbar.max_scroll);
+		window.Repaint();
 	}
 
 	zoomReset() {

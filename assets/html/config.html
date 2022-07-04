@@ -77,11 +77,11 @@
 	}
 
 	.dropbtn {white-space:nowrap; width:100%; background-color:#3e8e41; color:white; text-decoration:none; padding:0.13em 5px; border:none; cursor:pointer;}
-	.dropbtnLight {white-space:nowrap; width:100%; background-color::#E8E8E8; color:black; text-decoration:none; padding:0.13em 5px; border:none; cursor:pointer;}
+	.dropbtnLight {white-space:nowrap; width:100%; color:black; text-decoration:none; padding:0.13em 5px; border:none; cursor:pointer;}
 	.dropbtn:after {font-family: FontAwesome; content: "\f107"; padding-left:0.5em; padding-right:0.19em;}
 	.dropbtnLight:after {font-family: FontAwesome; content: "\f107"; padding-left:0.5em; padding-right:0.19em;}
 	.dropdown {margin-top: 10px; position:static; display:inline-block;}
-	.dropdown-content {display:none; position:absolute; background-color:#f9f9f9; min-width:160px; box-shadow:0 8px 1.01em 0 rgba(0,0,0,0.2); z-index:1;}
+	.dropdown-content {display:none; position:absolute; background-color:#f9f9f9; min-width:10em; white-space:nowrap; box-shadow:0 8px 1.01em 0 rgba(0,0,0,0.2); z-index:1;}
 	.dropdown-content a {padding:0.13em 5px; color:black; text-decoration:none; display:block;}
 	.dropdown-content a:hover {background-color:#f1f1f1;}
 	.dropdown .dropdown-content {display:none;}
@@ -289,7 +289,7 @@ Selected items will be displayed in the menu.
 			<div class="column33">		
 				<div class="div_text1">Top bar</b></div>
 				<div id="bar"></div>
-				<div style="padding-right:10%;" class="info4"><i>*If hidden, right click over filter or icon. If all hidden, use menu.</i></div>
+				<div style="padding-right:10%;" class="info4"><i>*If hidden, right click over filter or icon. If all hidden, use context menu.</i></div>
 				<div class="div_text2">Theme</div>
 				<span class="dropdown"><a id="theme_dropdown" class="dropbtn" href="#" onclick="toggle('themeBg');"></a>
 				<span id="themeBg" class="dropdown-content"></span>
@@ -323,6 +323,7 @@ Selected items will be displayed in the menu.
 				<span class="dropdown"><a id="showHl_dropdown" class="dropbtn" href="#" onclick="toggle('showHl');"></a>
 				<span id="showHl" class="dropdown-content"></span>
 				</span>
+				<div id="frameStyle" style="padding-top:0.5em;"></div>
 				<div class="div_text2">Hover effect (foreground)</div>
 				<div id="showH2"></div>
 				<div class="div_text2">Show</div>
@@ -779,7 +780,7 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				input.all.type = input.behaviour.type.concat(input.display.type, input.albumArt.type, input.custom.type, input.advanced.type);
 				var box = {
 					behaviour: ['fullLineSelection', 'autoPlay', 'sbarWinMetrics', 'smooth', 'touchControl', 'searchEnter', 'autoCollapse', 'treeAutoExpandSingle', 'treeAutoExpand', 'rememberTree', 'rememberView', 'activateOnChange'],
-					display: ['searchShow', 'filterShow', 'settingsShow', 'swapCol', 'autoFill', 'inlineRoot', 'showSource', 'nodeLines', 'countsRight', 'mousePointerOnly', 'highLightNode', 'highLightText', 'rowStripes', 'highLightNowplaying', 'albumArtOptionsShow', 'treeListView', 'showTracks'],
+					display: ['searchShow', 'filterShow', 'settingsShow', 'swapCol', 'autoFill', 'inlineRoot', 'showSource', 'nodeLines', 'countsRight', 'frameImage', 'mousePointerOnly', 'highLightNode', 'highLightText', 'rowStripes', 'highLightNowplaying', 'albumArtOptionsShow', 'treeListView', 'showTracks'],
 					albumArt: ['albumArtFlipLabels', 'stndModeFollowSelection', 'flowModeFollowSelection', 'albumArtDiskCache', 'albumArtPreLoad', 'albumArtFlowMode', 'artTreeSameView', 'albumArtLetter', 'albumArtYearAuto'],
 					custom: ['custFontUse', 'custAlbumArtGrpFontUse', 'custAlbumArtLotFontUse', 'textUse', 'text_hUse', 'textSelUse', 'nowpUse', 'searchUse', 'txt_boxUse', 'bgUse', 'bg_hUse', 'bgSelUse', 'frameUse', 'bgSelframeUse', 'countsUse', 'icon_cUse', 'icon_eUse', 'icon_hUse', 'lineUse', 's_lineUse', 'sideMarkerUse', 'bgTransUse'],
 					advanced: ['sbarFullHeight', 'winNode', 'blurAutofill', 'libAutoSync', 'pn_h_auto']
@@ -795,7 +796,7 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 					custom: [],
 					advanced: []
 				}
-				radio.all = radio.behaviour.concat(radio.behaviour, radio.display, radio.albumArt);
+				radio.all = radio.behaviour.concat(radio.behaviour, radio.albumArt);
 				callback = parsed_args[3];
 				props_callback = parsed_args[4];
 
@@ -1116,6 +1117,7 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 					
 					window.showHl_dropdown.innerHTML = highLightLabels[ppt['highLightRow_internal'].value];
 					for (i = 0; i < 4; i++) {window.showHl.insertAdjacentHTML('beforeend', '<a onclick="setHoverBg(' + i + ');">'+highLightLabels[i]+'</a>');}
+					i = 0; window.frameStyle.insertAdjacentHTML('beforeend', '<div><input id="frame_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="frame_checkbox'+i+'" class="checkbox_label">Frame style (album art): image border</label></div>');
 					for (i = 4; i < 7; i++) {window.showH2.insertAdjacentHTML('beforeend', '<div><input id="showH2_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="showH2_checkbox'+i+'" class="checkbox_label">'+highLightLabels[i]+'</label></div>');}
 					for (i = 0; i < 5; i++) {window.show.insertAdjacentHTML('beforeend', '<div><input id="show_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="show_checkbox'+i+'" class="checkbox_label">'+showLabels[i]+'</label></div>');}
 				}
@@ -1259,6 +1261,7 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				window.theme_checkbox6.parentNode.disabled = ppt['theme_internal'].value == 1 || ppt['theme_internal'].value == 4;
 				window.coverFormat_checkbox0.parentNode.disabled = ppt['theme_internal'].value != 5;
 				window.coverFormat_container1.parentNode.disabled = ppt['theme_internal'].value != 5;
+				window.frame_checkbox0.parentNode.disabled = ppt['highLightRow_internal'].value != 3;
 				window.node_checkbox6.parentNode.disabled = ppt['nodeStyle_internal'].value != 0 && ppt['nodeStyle_internal'].value != 6;
 				setNodeLabels();
 				window.showH2_checkbox5.parentNode.disabled = window.cusNode_checkbox3.checked && (ppt['nodeStyle_internal'].value == 0 || ppt['nodeStyle_internal'].value == 6);
@@ -1288,7 +1291,7 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				window.theme_checkbox6.parentNode.disabled = ppt['theme_internal'].value == 1 || ppt['theme_internal'].value == 4;
 				window.coverFormat_checkbox0.parentNode.disabled = ppt['theme_internal'].value != 5;
 				window.coverFormat_container1.parentNode.disabled = ppt['theme_internal'].value != 5;
-				
+
 				window.node_checkbox6.parentNode.disabled = ppt['nodeStyle_internal'].value != 0 && ppt['nodeStyle_internal'].value != 6;
 				window.showH2_checkbox5.parentNode.disabled = window.cusNode_checkbox3.checked && (ppt['nodeStyle_internal'].value == 0 || ppt['nodeStyle_internal'].value == 6);
 				

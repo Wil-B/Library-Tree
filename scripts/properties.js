@@ -87,6 +87,7 @@ class PanelProperties {
 }
 
 let properties = [
+	['- Show Html Dialog Unsupported-0 Supported-1 Autocheck-2', 2, 'isHtmlDialogSupported'],
 	['Colour Swap', false, 'swapCol'],
 	['Cover Auto-Fill', true, 'autoFill'],
 	['Cover Opacity (0-100)', 10, 'covAlpha'],
@@ -151,6 +152,7 @@ let properties = [
 	['Height Auto-Expand', 578, 'pn_h_max'],
 	['Highlight Nowplaying', false, 'highLightNowplaying'],
 	['Highlight Row', 2, 'highLightRow'],
+	['Highlight Frame Image', false, 'frameImage'],
 	['Highlight Text', false, 'highLightText'],
 	['Hot Key [Focus Not Needed]: 1-10 // Assign Spider Monkey Panel index in keyboard shortcuts', 'CollapseAll,0,PlaylistAdd,0,PlaylistInsert,0,PlaylistNew,0,Search,0,SearchClear,0', 'hotKeys'],
 

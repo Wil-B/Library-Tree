@@ -453,7 +453,7 @@ class Find {
 			if (!this.jSearch) return;
 			pop.sel_items = [];
 			this.jump_search = true;
-			window.RepaintRect(0, this.j.y, ui.w, this.j.h + 1);
+			panel.treePaint();
 			timer.clear(timer.jsearch1);
 			timer.jsearch1.id = setTimeout(() => {
 				pop.tree.some((v, i) => {
@@ -483,7 +483,7 @@ class Find {
 					} else if (pos >= 0 && pos < pop.tree.length) pop.setPlaylistSelection(pos, pop.tree[pos]);
 				}
 				this.jSearch = '';
-				window.RepaintRect(0, this.j.y, ui.w, this.j.h + 1);
+				panel.treePaint();
 				timer.jsearch2.id = null;
 			}, 1200);
 		}

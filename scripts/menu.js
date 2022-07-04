@@ -185,11 +185,11 @@ class MenuItems {
 				pop.checkAutoHeight();
 			},
 			flags: () => !i || i == 1 && this.expandable ? MF_STRING : MF_GRAYED,
-			separator: () => i == 1 && this.show_context && !ppt.settingsShow && !ppt.searchShow && !ppt.filterShow,
+			separator: () => i == 1 && this.show_context && (!ppt.settingsShow && !ppt.searchShow && !ppt.filterShow || this.shift),
 			hide: () => !this.validItem || panel.imgView
 		}));
 
-		menu.newMenu({menuName: 'Settings', hide: () => !this.show_context || ui.style.topBarShow});
+		menu.newMenu({menuName: 'Settings', hide: () => !this.show_context || ui.style.topBarShow && !this.shift});
 
 		const mainMenu = () => this.show_context ? 'Settings' : 'baseMenu';
 
@@ -303,11 +303,12 @@ class MenuItems {
 			hide: () => i < 2 && !panel.imgView || i == 3 && ppt.libAutoSync
 		});
 
-		menu.newItem({
+		for (let i = 0; i < 2; i++) menu.newItem({
 			menuName: () => mainMenu(),
-			str: () => popUpBox.ok ? 'Options...' : 'Options: see console',
-			func: () => panel.open(),
-			hide: () => !this.settingsBtnDn && ppt.settingsShow && this.validItem
+			str: () => [popUpBox.ok ? 'Options...' : 'Options: see console', 'Configure...'][i],
+			func: () => !i ? panel.open() : window.EditScript(),
+			separator: () => !i && this.shift,
+			hide: () => !this.settingsBtnDn && ppt.settingsShow && this.validItem && !this.shift || i && !this.shift
 		});
 	}
 
@@ -436,6 +437,7 @@ class MenuItems {
 		this.ix = pop.get_ix(x, y, true, false);
 		this.nm = '';
 		this.settingsBtnDn = settingsBtnDn;
+		this.shift = vk.k('shift');
 		this.show_context = false;
 
 		let item = pop.tree[this.ix];
@@ -561,13 +563,13 @@ class MenuItems {
 			case 1:
 				ppt.libSource = 2;
 				ppt.fixedPlaylist = false;
-				if (ppt.panelSourceMsg && soFeatures.gecko && soFeatures.clipboard) popUpBox.message();
+				if (ppt.panelSourceMsg && popUpBox.isHtmlDialogSupported()) popUpBox.message();
 				break;
 			case 2: {
 				const fixedPlaylistIndex = plman.FindPlaylist(ppt.fixedPlaylistName);
 				if (fixedPlaylistIndex != -1) ppt.fixedPlaylist = true;
 				ppt.libSource = ppt.fixedPlaylist ? 1 : 0;
-				if (ppt.panelSourceMsg && soFeatures.gecko && soFeatures.clipboard) popUpBox.message();
+				if (ppt.panelSourceMsg && popUpBox.isHtmlDialogSupported()) popUpBox.message();
 				break;
 			}
 		}
