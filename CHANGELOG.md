@@ -1,4 +1,4 @@
-# v2.3.2 [unreleased]
+# v2.3.2
 
 ### Added
 - Hover frame in album art view can now be displayed as an image border (display tab)
