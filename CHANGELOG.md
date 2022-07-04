@@ -1,7 +1,7 @@
 # v2.3.2
 
 ### Added
-- Hover frame in album art view can now be displayed as an image border (display tab)
+- Album art view: hover frame can now be displayed as an image border (display tab)
 - Menu configure that opens Spider Monkey Configuration (right click + shift)
 
 ### Changed
