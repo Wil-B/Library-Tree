@@ -33,7 +33,6 @@ class Search {
 			}
 			this.menu.sort((a, b) => pop.collator.compare(a.search, b.search));
 			ppt.searchHistory = JSON.stringify(this.menu);
-			men.refreshSearchHistoryMenu();
 		}, 3000);
 		
 	}

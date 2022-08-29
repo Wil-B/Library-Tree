@@ -134,11 +134,14 @@ let properties = [
 
 	['Custom Font', 'Segoe UI,16,0', 'custFont'],
 	['Custom Font Album Art Line 1', 'Segoe UI,1', 'custAlbumArtGrpFont'],
-	['Custom Font Album Art Line 2', 'Segoe UI,2', 'custAlbumArtLotFont'],
+	['Custom Font Album Art Line 2', 'Segoe UI Semibold,0', 'custAlbumArtLotFont'],
+	['Custom Font Album Art Line 3', 'Segoe UI,0', 'custAlbumArtDurFont'],
 
 	['Custom Font Use', false, 'custFontUse'],
 	['Custom Font Album Art Line 1 Use', false, 'custAlbumArtGrpFontUse'],
 	['Custom Font Album Art Line 2 Use', false, 'custAlbumArtLotFontUse'],
+	['Custom Font Album Art Line 3 Use', false, 'custAlbumArtDurFontUse'],
+	
 	['Custom Font Node Icon', 'Segoe UI Symbol', 'custIconFont'],
 	['Custom Font Scroll Icon', 'Segoe UI Symbol', 'butCustIconFont'],
 
@@ -187,7 +190,7 @@ let properties = [
 	['Image Style [Artist] Regular-0 Auto-Fill-1 Circular-2', 2, 'imgStyleArtist'],
 	['Image Thumbnail Gap Standard', 0, 'thumbNailGapStnd'],
 	['Image Thumbnail Gap Compact', 3, 'thumbNailGapCompact'],
-	['Image Thumbnail Size', 1, 'thumbNailSize'],
+	['Image Thumbnail Size', 2, 'thumbNailSize'],
 	['Image Type', 0, 'artId'],
 	['Image View By: Same As Tree', true, 'artTreeSameView'],
 
@@ -195,6 +198,8 @@ let properties = [
 	['Initial Load Views', true, 'initialLoadViews'],
 	['Key: Send to Playlist', 0, 'keyAction'],
 	['Library Auto-Sync', true, 'libAutoSync'],
+	['Library Sort Date Before Album', true, 'yearBeforeAlbum'],
+	
 	['Library Source', 1, 'libSource'],
 	['Library Source: Active Playlist Follow Focus', true, 'followPlaylistFocus'],
 	['Library Source: Fixed Playlist', false, 'fixedPlaylist'],
@@ -212,6 +217,7 @@ let properties = [
 	['Node: Highlight on Hover', true, 'highLightNode'],
 	['Node: Item Counts Align Right', true, 'countsRight'],
 	['Node: Item Counts Hide-0 Tracks-1 Sub-Items-2', 1, 'nodeCounts'],
+	['Node: Item Show Duration', false, 'itemShowDuration'],
 	['Node: Root Hide-0 All Music-1 View Name-2', 1, 'rootNode'],
 	['Node: Root Inline Style', true, 'inlineRoot'],
 	['Node: Root Show Source', false, 'showSource'],

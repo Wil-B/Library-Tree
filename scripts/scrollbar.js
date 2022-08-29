@@ -107,7 +107,7 @@ class Scrollbar {
 		}, 16);
 
 		this.hideDebounce = $.debounce(() => {
-			if (ppt.countsRight && !panel.imgView && (!ppt.rootNode || pop.inlineRoot)) return;
+			if ((ppt.countsRight || ppt.itemShowDuration) && !panel.imgView && (!ppt.rootNode || pop.inlineRoot)) return;
 			if (this.scrollbar.zone) return;
 			this.active = false;
 			this.cur_active = this.active;
@@ -368,7 +368,7 @@ class Scrollbar {
 		// panel info
 		if (this.vertical) this.narrow.x = this.x + this.w - $.clamp(ui.sbar.narrowWidth, 5, this.w);
 		else this.narrow.y = this.y + this.h - $.clamp(ui.sbar.narrowWidth, 5, this.h);
-		panel.tree.w = ui.w - Math.max(ppt.sbarShow && this.scrollable_lines > 0 ? !ppt.countsRight ? ui.sbar.sp + ui.sz.sel : ppt.sbarShow == 2 ? ui.sbar.sp + ui.sz.margin : ppt.sbarShow == 1 ? (ui.w - this.narrow.x) + ui.sz.marginRight + Math.max(this.w - 11, 0) : ui.sz.sel : ui.sz.sel, ui.sz.margin);
+		panel.tree.w = ui.w - Math.max(ppt.sbarShow && this.scrollable_lines > 0 ? !ppt.countsRight && !ppt.itemShowDuration ? ui.sbar.sp + ui.sz.sel : ppt.sbarShow == 2 ? ui.sbar.sp + ui.sz.margin : ppt.sbarShow == 1 ? (ui.w - this.narrow.x) + ui.sz.marginRight + Math.max(this.w - 11, 0) : ui.sz.sel : ui.sz.sel, ui.sz.margin);
 		pop.id = ui.id.tree + ppt.fullLineSelection + panel.tree.w + panel.imgView + ppt.albumArtLabelType + ppt.albumArtFlipLabels + ppt.albumArtFlowMode;
 		panel.tree.stripe.w = ppt.sbarShow == 2 && this.scrollable_lines > 0 ? ui.w - ui.sbar.sp - ui.sz.pad : ui.w;
 		panel.tree.sel.w = ppt.sbarShow == 2 && this.scrollable_lines > 0 ? ui.w - ui.sbar.sp - ui.sz.pad * 2 : ui.w - ui.sz.pad * 2;

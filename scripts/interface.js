@@ -22,10 +22,11 @@ class UserInterface {
 		}
 
 		this.font = {
+			duration: gdi.Font('Segoe UI Semibold', 16, 0),
 			find: gdi.Font('Segoe UI', 24, 0),
-			group: gdi.Font('Segoe UI', 16, 0),
+			group: gdi.Font('Segoe UI', 16, 1),
 			groupEllipsisSpace: 0,
-			lot: gdi.Font('Segoe UI', 16, 0),
+			lot: gdi.Font('Segoe UI Semibold', 16, 0),
 			lotEllipsisSpace: 0,
 			main: gdi.Font('Segoe UI', 16, 0),
 			mainEllipsisSpace: 0,
@@ -226,10 +227,10 @@ class UserInterface {
 
 		this.sz.sel = (this.style.squareNode ? this.sz.sp1 : this.sz.sp + Math.round(this.sz.sp / 3)) / 2;
 		this.sz.margin = this.style.topBarShow && pop.inlineRoot ? ppt.margin + Math.floor(Math.max(this.font.main.Size * 10 / 27, 5)) : ppt.margin;
-		this.sz.marginRight = ppt.countsRight ? ppt.margin + Math.floor(Math.max(this.font.main.Size * 10 / 27, 5)) : ppt.margin;
+		this.sz.marginRight = ppt.countsRight || ppt.itemShowDuration ? ppt.margin + Math.floor(Math.max(this.font.main.Size * 10 / 27, 5)) : ppt.margin;
 		this.sz.marginSearch = this.sz.margin;
 
-		if (this.style.topBarShow && (ppt.countsRight || ppt.rowStripes || ppt.fullLineSelection || pop.inlineRoot || ppt.nodeStyle == 3)) this.sz.marginSearch -= 1;
+		if (this.style.topBarShow && (ppt.countsRight || ppt.itemShowDuration || ppt.rowStripes || ppt.fullLineSelection || pop.inlineRoot || ppt.nodeStyle == 3)) this.sz.marginSearch -= 1;
 		if (this.style.topBarShow && !pop.inlineRoot && ppt.nodeStyle == 3) this.sz.marginSearch -= 1;
 		this.id.tree = this.font.main.Name + this.font.main.Size + this.font.main.Style + this.icon.w + this.sz.margin + this.sz.marginSearch;
 		if (refreshImg) img.sizeDebounce();
@@ -430,6 +431,8 @@ class UserInterface {
 	}
 
 	getFont() {
+		const RunningWine = () => utils.IsFile('Z:\\bin\\bash' || 'Z:\\bin\\ls' || 'Z:\\bin\\sh' || 'Z:\\etc\\fstab'); /* detects if user is running Wine on Linux or MacOs, default Wine mount point is Z:\ */
+
 		if (ppt.custFontUse && ppt.custFont.length) {
 			const custFont = $.split(ppt.custFont, 1);
 			this.font.main = gdi.Font(custFont[0], Math.max(Math.round($.value(custFont[1], 16, 0)), 1), Math.round($.value(custFont[2], 0, 0)));
@@ -438,7 +441,7 @@ class UserInterface {
 
 		if (this.id.local) this.font.main = c_font;
 
-		if (!this.font.main) {
+		if (!this.font.main || /tahoma/i.test(this.font.main.Name) && RunningWine()) { // Windows: check still needed (test MS Serif or Modern, neither can be used); Wine: tahoma is default system font, but bold and some unicode characters don't work: if Wine + tahoma detected changed to Segoe UI (if that's not installed, tahoma is still used) 
 			this.font.main = gdi.Font('Segoe UI', 16, 0);
 			$.trace('Spider Monkey Panel is unable to use your default font. Using Segoe UI at default size & style instead', false);
 		}
@@ -476,12 +479,17 @@ class UserInterface {
 		if (ppt.custAlbumArtGrpFontUse && ppt.custAlbumArtGrpFont.length) {
 			const custFont = $.split(ppt.custAlbumArtGrpFont, 1);
 			this.font.group = gdi.Font(custFont[0], this.font.main.Size, Math.round($.value(custFont[1], 1, 0)));
-		} else this.font.group = this.font.main.Name.toLowerCase() == 'segoe ui' ? gdi.Font('Segoe UI Semibold', this.font.main.Size, 0) : gdi.Font(this.font.main.Name, this.font.main.Size, 1);
+		} else this.font.group = gdi.Font(this.font.main.Name, this.font.main.Size, 1)
 
 		if (ppt.custAlbumArtLotFontUse && ppt.custAlbumArtLotFont.length) {
 			const custFont = $.split(ppt.custAlbumArtLotFont, 1);
 			this.font.lot = gdi.Font(custFont[0], this.font.main.Size, Math.round($.value(custFont[1], 2, 0)));
-		} else this.font.lot = gdi.Font(this.font.main.Name, this.font.main.Size, 2);
+		} else this.font.lot = gdi.Font('Segoe UI Semibold', this.font.main.Size, 0);
+		
+		if (ppt.custAlbumArtDurFontUse && ppt.custAlbumArtDurFont.length) {
+			const custFont = $.split(ppt.custAlbumArtDurFont, 1);
+			this.font.duration = gdi.Font(custFont[0], this.font.main.Size, Math.round($.value(custFont[1], 2, 0)));
+		} else this.font.duration = gdi.Font('Segoe UI Semibold', this.font.main.Size, 0);
 
 		this.calcText(true);
 	}
@@ -538,7 +546,7 @@ class UserInterface {
 			this.col.text_h = this.col.text;
 			this.col.text = colH;
 		}
-		if (this.col.nowp === '') this.col.nowp = !this.img.blurDark ? this.col.text_h :  RGB(128, 228, 0);
+		if (this.col.nowp === '') this.col.nowp = !this.img.blurDark ? this.col.text_h : RGB(128, 228, 27);
 
 		if (this.col.bg_h === '') {
 			this.col.bg_h = ppt.highLightRow > 2 ? (this.img.blurDark ? 0x24000000 : 0x1E30AFED) : this.img.blurDark ? 0x19ffffff : this.img.blurLight || lightBg ? 0x19000000 : 0x19ffffff;
@@ -626,7 +634,7 @@ class UserInterface {
 		this.icon.col_e = this.col.icon_e;
 		this.icon.col_h = this.col.icon_h;
 		this.setIconCol();
-		this.col.searchSel = window.IsTransparent || !this.col.bgSel ? 0xff0099ff : this.getContrast(this.col.search, this.col.bgSel) > 3 ? this.col.bgSel : this.getBlend(this.col.search, this.col.bg == 0 ? 0xff000000 : this.col.bg, 0.25);
+		this.col.searchSel = window.IsTransparent || !this.col.bgSel ? 0xff0099ff : this.getContrast(this.col.search, this.col.bgSel) > 3 ? this.col.bgSel : this.getBlend(this.col.search, this.col.bg == 0 || this.img.blurDark ? 0xff000000 : this.col.bg, 0.25);
 		this.sbar.col = this.img.blurDark || this.img.blurLight ? 1 : ppt.sbarCol;
 		this.col.txtArr = [this.col.text, this.col.text_h, this.col.textSel];
 	}

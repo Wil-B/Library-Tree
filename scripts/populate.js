@@ -302,7 +302,7 @@ class Populate {
 			br[0].sorted = true;
 		}
 		const br_l = br.length;
-		const imgItemCounts = ppt.albumArtLabelType == 2 && panel.lines == 1 && (this.nodeCounts == 1 || this.nodeCounts == 2);
+		const imgItemCounts = ppt.itemOverlayType == 1 || (ppt.albumArtLabelType == 2 || ppt.itemShowDuration) && (this.nodeCounts == 1 || this.nodeCounts == 2);
 		const par = this.tree.length - 1;
 		if (tr == 0) this.clearTree();
 		let type;
@@ -337,11 +337,11 @@ class Populate {
 			item.name = !panel.noDisplay ? item.nm : item.nm.replace(/#@#.*?#@#/g, '');
 			if (!panel.imgView) {
 				this.getItemCount(item, par, pr, tr, type);
-				if (this.countsRight) item.count = item.count.replace(/[()]/g, '');
-			} else if (ppt.itemOverlayType == 1) {
+				if (this.countsRight && !this.durationShow) item.count = item.count.replace(/[()]/g, '');
+			} else if (imgItemCounts) {
 				item.count = this.trackCount(item.item);
 				item.count += item.count > 1 ? ' tracks' : ' track';
-			} else if (imgItemCounts) this.getItemCount(item, par, pr, tr, type);
+			}
 			if (v.child.length > 0) this.buildTree(v.child, tr + 1, node, !item.root ? false : true);
 		});
 		if (this.rootNode == 3) this.tree[0].name = this.tree[0].child.length > 1 ? panel.rootName.replace('#^^^^#', this.tree[0].child.length) : panel.rootName1;
@@ -353,6 +353,19 @@ class Populate {
 
 	butTooltipFont() {
 		return ['Segoe UI', 15 * $.scale * ppt.zoomTooltipBut / 100, 0];
+	}
+
+	calcTotalDuration(v) {
+		const handleList = new FbMetadbHandleList();
+		let items = [];
+		this.addItems(items, v.item);
+		this.uniq(items);
+		items = [...new Set(items)].sort(this.numSort)
+		items.some(v => {
+			if (v >= panel.list.Count) return true;
+			handleList.Add(panel.list[v]);
+		});
+		return utils.FormatDuration(handleList.CalcTotalDuration());
 	}
 
 	checkAutoHeight() {
@@ -398,7 +411,7 @@ class Populate {
 		if (!item) return;
 		switch (true) {
 			case !panel.imgView: {
-				text = (!panel.colMarker ? item.name : item.name.replace(/@!#.*?@!#/g, '')) + (!this.countsRight ? item.count : '');
+				text = (!panel.colMarker ? item.name : item.name.replace(/@!#.*?@!#/g, '')) + (!this.countsRight || this.durationShow ? item.count : '');
 				text = text.replace(/&/g, '&&');
 				if (text != tooltip.Text) this.deactivateTooltip();
 				const trace = item.tt && item.tt.needed && x >= item.tt.x && x <= item.tt.x + item.tt.w && y >= item.tt.y && y <= item.tt.y + ui.row.h;
@@ -411,6 +424,7 @@ class Populate {
 			case panel.imgView: {
 				let trace1 = false;
 				let trace2 = false;
+				let trace3 = false;
 				if (!img.labels.hide) {
 					if (!item.tt) {
 						this.deactivateTooltip();
@@ -418,10 +432,10 @@ class Populate {
 					}
 					trace1 = x >= item.tt.x && x <= item.tt.x + item.tt.w && y >= item.tt.y1 && y <= item.tt.y1 + img.text.h;
 					trace2 = item.tt.y2 == -1 ? false : x >= item.tt.x && x <= item.tt.x + item.tt.w && y >= item.tt.y2 && y <= item.tt.y2 + img.text.h;
-					text = trace1 || trace2 ? item.tt.text : '';
-					text = text.replace(/&/g, '&&');
+					trace3 = item.tt.y3 == -1 ? false : x >= item.tt.x && x <= item.tt.x + item.tt.w && y >= item.tt.y3 && y <= item.tt.y3 + img.text.h;
+					text = trace1 || trace2 || trace3 ? item.tt.text : '';
 					if (text != tooltip.Text) this.deactivateTooltip();
-					if (!trace1 && !trace2 || !item.tt[1] && !item.tt[2]) {
+					if (!trace1 && !trace2 && !trace3 || !item.tt[1] && !item.tt[2] && !item.tt[3]) {
 						this.deactivateTooltip();
 						return;
 					}
@@ -685,7 +699,7 @@ class Populate {
 
 	draw(gr) {
 		if (lib.empty) return gr.GdiDrawText(lib.empty, ui.font.main, ui.col.text, ui.sz.margin, panel.search.h, panel.tree.w, ui.row.h * 3, 0x00000004 | 0x00000400);
-		if (!this.tree.length || !panel.draw) return gr.GdiDrawText(pop.libItems && !panel.search.txt && !ppt.filterBy && ppt.libSource ? 'Loading...' : lib.none, ui.font.main, ui.col.text, ui.sz.margin, panel.search.h, panel.tree.w, ui.row.h, 0x00000004 | 0x00000400);
+		if (!this.tree.length || !panel.draw) return gr.GdiDrawText(this.libItems && !panel.search.txt && !ppt.filterBy && ppt.libSource ? 'Loading...' : lib.none, ui.font.main, ui.col.text, ui.sz.margin, panel.search.h, panel.tree.w, ui.row.h, 0x00000004 | 0x00000400);
 		if (panel.imgView) return;
 		const b = $.clamp(Math.round(sbar.delta / ui.row.h + 0.4), 0, this.tree.length - 1);
 		const bar_x = this.nodeStyle && this.nodeStyle < 4 ? 0 : ui.sz.pad;
@@ -715,10 +729,10 @@ class Populate {
 		}
 		for (i = b; i < f; i++) {
 			const item = this.tree[i];
-			nm[i] = item.name + (i || this.rootNode != 3 || this.nodeCounts == 1 && this.countsRight ? (!this.countsRight ? item.count : '') : '');
+			nm[i] = item.name + (i || this.rootNode != 3 || this.nodeCounts == 1 && (this.countsRight || this.durationShow) ? (!this.countsRight || this.durationShow ? item.count : '') : '');
 			if (item.id != this.id) {
 				item.name_w = gr.CalcTextWidth(!panel.colMarker ? nm[i] : nm[i].replace(/@!#.*?@!#/g, ''), ui.font.main);
-				item.count_w = this.countsRight ? gr.CalcTextWidth(item.count, ui.font.main) + (item.count ? ui.row.h * 0.2 : 0) : 0;
+				item.count_w = this.countsRight || this.durationShow ? gr.CalcTextWidth(!this.durationShow ? item.count : item.duration, ui.font.main) + ((!this.durationShow ? item.count : item.duration) ? ui.row.h * 0.2 : 0) : 0;
 				if (!this.fullLineSelection) {
 					item.w = item.name_w;
 					item.id = this.id;
@@ -848,7 +862,7 @@ class Populate {
 				const type = item.sel ? (this.highlight.row || !this.fullLineSelection ? 2 : 0) : this.m.i == i && this.highlight.text ? 1 : 0;
 				const txt_c = np ? ui.col.nowp : ui.col.txtArr[type];
 				!panel.colMarker ? gr.GdiDrawText(nm[i], ui.font.main, txt_c, item_x, item_y, w, ui.row.h, panel.lc) : this.cusCol(gr, nm[i], item, item_x, item_y, w, ui.row.h, type, np, ui.font.main, ui.font.mainEllipsisSpace, 'text');
-				if (this.countsRight) gr.GdiDrawText(item.count, ui.font.small, txt_co, item_x, item_y, panel.tree.w - item_x, ui.row.h, panel.rc);
+				if (this.countsRight || this.durationShow) gr.GdiDrawText(!this.durationShow ? item.count : item.duration, ui.font.small, txt_co, item_x, item_y, panel.tree.w - item_x, ui.row.h, panel.rc);
 			}
 		}
 	}
@@ -1111,6 +1125,7 @@ class Populate {
 	}
 
 	getItemCount(item, par, pr, tr, type) {
+		if (this.durationShow) item.duration = this.calcTotalDuration(item);
 		item.count = !item.track || !this.showTracks ? (item.name ? ' ' : '') + (this.nodeCounts == 1 ? '(' + this.trackCount(item.item) + ')' : this.nodeCounts == 2 ? '(' + this.branchCount(item, !item.root ? false : true, true, false, tr + (tr > 2 ? this.tree[this.tree[pr].par].nm : '') + (tr > 1 ? this.tree[pr].nm : '') + (tr > 0 ? this.tree[par].nm : '') + item.nm, type) + ')' : '') : '';
 		if (!this.showTracks && item.count == (item.name ? ' ' : '') + '(0)') item.count = '';
 	}
@@ -1132,7 +1147,7 @@ class Populate {
 				const row_ix = img.style.vertical ? Math.ceil((y + sbar.delta - img.panel.y) / img.row.h) - 1 : 0;
 				const column_ix = img.style.vertical ? (!img.labels.right && !ppt.albumArtFlowMode ? Math.ceil((x - img.panel.x) / img.columnWidth) - 1 : 0) : Math.ceil((x + sbar.delta - img.panel.x) / img.columnWidth) - 1;
 				ix = (row_ix * img.columns) + column_ix;
-				ix = ix > pop.tree.length - 1 ? -1 : ix;
+				ix = ix > this.tree.length - 1 ? -1 : ix;
 				return ix;
 			}
 			return -1;
@@ -1784,6 +1799,7 @@ class Populate {
 
 	setValues() {
 		this.countsRight = ppt.countsRight;
+		this.durationShow = ppt.itemShowDuration;
 		this.fullLineSelection = ppt.fullLineSelection;
 		this.highlight = {
 			node: ppt.highLightNode,

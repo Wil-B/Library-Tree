@@ -29,6 +29,7 @@ class Panel {
 		this.menu = [];
 		this.paint_y = Math.floor(ui.style.topBarShow || !ppt.sbarShow ? ui.row.h * 1.2 : 0);
 		this.pn_h_auto = ppt.pn_h_auto && ppt.rootNode;
+		this.propNames = [];
 		this.newView = true;
 		this.pos = -1;
 		this.rc = DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS;
@@ -179,6 +180,7 @@ class Panel {
 				}
 			}
 		});
+
 		grps = [];
 		this.filter_ppt.forEach((v, i) => {
 			if (v.includes('//')) {
@@ -382,8 +384,8 @@ class Panel {
 				if (prop) {
 					if (prop.includes('//') || prop.includes('/hide/')) dialogFilters.push(prop);
 					if (prop.includes('//')) this.filter_ppt.push(prop);
-					pptNo++;
 				}
+				if (prop || prop === null) pptNo++;
 			}
 		}
 
@@ -467,12 +469,13 @@ class Panel {
 				if (prop) {
 					if (prop.includes('//') || prop.includes('/hide/')) dialogViews.push(prop);
 					if (prop.includes('//')) this.view_ppt.push(prop);
-					pptNo++;
 				}
+				if (prop || prop === null) pptNo++;
 			}
 		}
 
 		pt = undefined;
+
 		let nm = '';
 		for (let i = pptNo + 1; i < 100; i++) {
 			nm = ppt.get(`View ${$.padNumber(i, 2)}: Name // Pattern`);
@@ -481,6 +484,19 @@ class Panel {
 				if (nm.includes('//')) this.view_ppt.push(nm);
 			}
 		}
+
+		nm = '';
+		this.propNames = [];
+		for (let i = 1; i < 100; i++) {
+			const propName = `View ${$.padNumber(i, 2)}: Name // Pattern`;
+			nm = ppt.get(propName);
+			if (nm) {
+				if (nm.includes('//')) {
+					this.propNames.push(propName);
+				}
+			}
+		}
+		this.propNames.shift();
 
 		this.dialogGrps = dialogViews.map(v => {
 			if (v.includes('//')) {
@@ -520,7 +536,7 @@ class Panel {
 		const ln_sp = ui.style.topBarShow && !ui.id.local ? Math.floor(ui.row.h * 0.1) : 0;
 		const sbarStyle = !ppt.sbarFullHeight ? 2 : 0;
 		this.calcText();
-		this.ln.x = ppt.countsRight || ppt.rowStripes || ppt.fullLineSelection || pop.inlineRoot ? 0 : ui.sz.marginSearch;
+		this.ln.x = ppt.countsRight || ppt.itemShowDuration || ppt.rowStripes || ppt.fullLineSelection || pop.inlineRoot ? 0 : ui.sz.marginSearch;
 		this.ln.w = ui.w - this.ln.x - 1;
 		this.search.h = ui.style.topBarShow ? ui.row.h + (!ui.id.local ? ln_sp * 2 : 0) : ui.sz.margin;
 		this.search.sp = this.search.h - ln_sp;
@@ -610,11 +626,6 @@ class Panel {
 			if (type == 'reset') {
 				this.updateProp(ppt, 'default_value');
 			}
-
-			if (new_cfg || new_ppt || type == 'reset') {
-				men.refreshMainMenu();
-				men.refreshFilterMenu();
-			}
 		}
 
 		this.getViews();
@@ -637,7 +648,7 @@ class Panel {
 	}
 
 	set(n, i, treeArtToggle) {
-		const prompt = 'This changes various options\n\nContinue?';
+		const prompt = 'This changes various options ' + (i < 5 ? 'on the display tab' : i < 12 ? 'on the display and album art tabs' : '') + '\n\nContinue?';
 		switch (n) {
 			case 'quickSetup':
 				switch (i) {
@@ -645,6 +656,7 @@ class Panel {
 						const continue_confirmation = (status, confirmed) => {
 							if (confirmed) {
 								ppt.countsRight = false;
+								ppt.itemShowDuration = false;
 								ppt.nodeStyle = 0;
 								ppt.inlineRoot = false;
 								ppt.autoCollapse = false;
@@ -662,7 +674,7 @@ class Panel {
 								ppt.rootNode = 1;
 								panel.imgView = ppt.albumArtShow = false;
 								ppt.albumArtLabelType = 1;
-								ppt.thumbNailSize = 1;
+								ppt.thumbNailSize = 2;
 								ppt.artId = 0;
 								this.load();
 							}
@@ -676,6 +688,7 @@ class Panel {
 						const continue_confirmation = (status, confirmed) => {
 							if (confirmed) {
 								ppt.countsRight = true;
+								ppt.itemShowDuration = false;
 								ppt.nodeStyle = 2;
 								ppt.inlineRoot = true;
 								ppt.autoCollapse = false;
@@ -693,7 +706,7 @@ class Panel {
 								ppt.rootNode = 3;
 								panel.imgView = ppt.albumArtShow = false;
 								ppt.albumArtLabelType = 1;
-								ppt.thumbNailSize = 1;
+								ppt.thumbNailSize = 2;
 								ppt.artId = 0;
 								this.load();
 							}
@@ -707,6 +720,7 @@ class Panel {
 						const continue_confirmation = (status, confirmed) => {
 							if (confirmed) {
 								ppt.countsRight = true;
+								ppt.itemShowDuration = true;
 								ppt.nodeStyle = 3;
 								ppt.inlineRoot = true;
 								ppt.autoCollapse = true;
@@ -723,8 +737,15 @@ class Panel {
 								ppt.verticalPad = 5;
 								ppt.rootNode = 3;
 								panel.imgView = ppt.albumArtShow = false;
+								if (!ppt.presetLoadCurView) ppt.viewBy = 1;
+								ppt.albumArtFlowMode = false;
 								ppt.albumArtLabelType = 1;
-								ppt.thumbNailSize = 1;
+								ppt.albumArtFlipLabels = true;
+								ppt.imgStyleFront = 1;
+								ppt.itemOverlayType = 1;
+								ppt.thumbNailSize = 2;
+								ppt.artId = 0;
+								ppt.albumArtGrpLevel = 0;
 								ppt.artId = 0;
 								this.load();
 							}
@@ -738,6 +759,7 @@ class Panel {
 						const continue_confirmation = (status, confirmed) => {
 							if (confirmed) {
 								ppt.countsRight = true;
+								ppt.itemShowDuration = false;
 								ppt.nodeStyle = 4;
 								ppt.inlineRoot = true;
 								ppt.autoCollapse = false;
@@ -755,7 +777,7 @@ class Panel {
 								ppt.rootNode = 3;
 								panel.imgView = ppt.albumArtShow = false;
 								ppt.albumArtLabelType = 1;
-								ppt.thumbNailSize = 1;
+								ppt.thumbNailSize = 2;
 								ppt.artId = 0;
 								this.load();
 							}
@@ -769,6 +791,7 @@ class Panel {
 						const continue_confirmation = (status, confirmed) => {
 							if (confirmed) {
 								ppt.countsRight = true;
+								ppt.itemShowDuration = false;
 								ppt.nodeStyle = 2;
 								ppt.inlineRoot = true;
 								ppt.autoCollapse = false;
@@ -776,7 +799,7 @@ class Panel {
 								ppt.treeListView = true;
 								panel.imgView = ppt.albumArtShow = false;
 								ppt.albumArtLabelType = 1;
-								ppt.thumbNailSize = 1;
+								ppt.thumbNailSize = 2;
 								ppt.artId = 0;
 								ui.sbar.type = 1;
 								ppt.sbarType = 1;
@@ -814,15 +837,17 @@ class Panel {
 								if (!ppt.presetLoadCurView) ppt.viewBy = 1;
 								ppt.albumArtFlowMode = false;
 								ppt.albumArtLabelType = 2;
+								ppt.albumArtFlipLabels = true;
+								ppt.itemShowDuration = true;
 								ppt.imgStyleFront = 1;
 								ppt.itemOverlayType = 2;
-								ppt.thumbNailSize = 0;
+								ppt.thumbNailSize = 2;
 								ppt.artId = 0;
 								ppt.albumArtGrpLevel = 0;
 								this.load();
 							}
 						}
-						const caption = 'Quick Setup: List View + Album Covers';
+						const caption = 'Quick Setup: Album Covers [Labels Right]';
 						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
@@ -842,18 +867,20 @@ class Panel {
 								ppt.rootNode = 3;
 								ppt.treeListView = false;
 								panel.imgView = ppt.albumArtShow = true;
-								if (!ppt.presetLoadCurView) ppt.viewBy = 0;
+								if (!ppt.presetLoadCurView) ppt.viewBy = 1;
 								ppt.albumArtFlowMode = false;
-								ppt.albumArtLabelType = 2;
-								ppt.imgStyleArtist = 2;
-								ppt.itemOverlayType = 0;
-								ppt.thumbNailSize = 0;
-								ppt.artId = 4;
+								ppt.albumArtLabelType = 1;
+								ppt.albumArtFlipLabels = true;
+								ppt.itemShowDuration = false;
+								ppt.imgStyleFront = 1;
+								ppt.itemOverlayType = 1;
+								ppt.thumbNailSize = 2;
+								ppt.artId = 0;
 								ppt.albumArtGrpLevel = 0;
 								this.load();
 							}
 						}
-						const caption = 'Quick Setup: List View + Artist Photos';
+						const caption = 'Quick Setup: Album Covers [Labels Bottom]';
 						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
@@ -875,21 +902,57 @@ class Panel {
 								panel.imgView = ppt.albumArtShow = true;
 								if (!ppt.presetLoadCurView) ppt.viewBy = 1;
 								ppt.albumArtFlowMode = false;
-								ppt.albumArtLabelType = 1;
+								ppt.albumArtLabelType = 4;
+								ppt.albumArtFlipLabels = true;
+								ppt.itemShowDuration = false;
 								ppt.imgStyleFront = 1;
-								ppt.itemOverlayType = 1;
-								ppt.thumbNailSize = 1;
+								ppt.itemOverlayType = 0;
+								ppt.thumbNailSize = 3;
 								ppt.artId = 0;
 								ppt.albumArtGrpLevel = 0;
 								this.load();
 							}
 						}
-						const caption = 'Quick Setup: Album Covers';
+						const caption = 'Quick Setup: Album Covers [Labels Blend]';
 						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
 					case 8: {
+						const continue_confirmation = (status, confirmed) => {
+							if (confirmed) {
+								ui.sbar.type = 1;
+								ppt.sbarType = 1;
+								ppt.sbarShow = 1;
+								ppt.fullLineSelection = true;
+								ppt.highLightText = false;
+								ppt.rowStripes = true;
+								ppt.highLightRow = 1;
+								ppt.highLightNode = false;
+								ppt.verticalPad = 5;
+								ppt.rootNode = 3;
+								ppt.treeListView = false;
+								panel.imgView = ppt.albumArtShow = true;
+								if (!ppt.presetLoadCurView) ppt.viewBy = 0;
+								ppt.albumArtFlowMode = false;
+								ppt.albumArtLabelType = 2;
+								ppt.itemShowDuration = false;
+								ppt.imgStyleArtist = 2;
+								ppt.itemOverlayType = 0;
+								ppt.thumbNailSize = 1;
+								ppt.artId = 4;
+								ppt.albumArtGrpLevel = 0;
+								this.load();
+							}
+						}
+						const caption = 'Quick Setup: Artist Photos [Labels Right]';
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
+						break;
+					}
+					case 9: ppt.thumbNailSize++; this.load(); break;
+					case 10: ppt.thumbNailSize--; this.load(); break;
+					case 11: {
 						const continue_confirmation = (status, confirmed) => {
 							if (confirmed) {
 								ppt.countsRight = true;
@@ -902,9 +965,10 @@ class Panel {
 								if (!ppt.presetLoadCurView) ppt.viewBy = 1;
 								ppt.albumArtFlowMode = true;
 								ppt.albumArtLabelType = 1;
+								ppt.itemShowDuration = false;
 								ppt.imgStyleFront = 1;
-								ppt.itemOverlayType = 1;
-								ppt.thumbNailSize = 1;
+								ppt.itemOverlayType = 0;
+								ppt.thumbNailSize = 2;
 								if (!ppt.presetLoadCurView) ppt.artId = 0;
 								ppt.albumArtGrpLevel = 0;
 								this.load();
@@ -915,7 +979,7 @@ class Panel {
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
-					case 9:
+					case 12:
 						ppt.toggle('presetLoadCurView');
 						return;
 				}

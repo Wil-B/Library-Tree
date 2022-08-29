@@ -162,6 +162,10 @@ class Helpers {
 		return l;
 	}
 
+	regexEscape(n) {
+		return n.replace(/[*+\-?^!:&"~${}()|[\]/\\]/g, '\\$&');
+	}
+
 	replaceAt(str, pos, chr) {
 		return str.substring(0, pos) + chr + str.substring(pos + 1);
 	}
