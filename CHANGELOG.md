@@ -1,3 +1,16 @@
+# v2.3.3
+
+### Added
+- Display of item durations for tree and album art views (enable on display tab)
+- Intelligent group level sort by year
+	- this automatically adjusts the view pattern to enable sorting in different ways, e.g. to enable reverse sorting $nodisplay snipetts are inserted into the view pattern. This is reversible by selecting the default sort provided the view isn't manually edited to alter the snippetts
+- Wine: font check
+
+### Fixed
+- Search text was difficult to read with certain theme and colour combinations
+
+<br />
+
 # v2.3.2
 
 ### Added
