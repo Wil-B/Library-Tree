@@ -26,6 +26,8 @@ New install or update:
 6) Open package manager if it doesn't open automatically
 7) Import the package
 
+Tip: check out Quick setup for a flavour of capabilities
+
 ### SUPPORT
 The official discussion thread for Library Tree is located at [HydrogenAudio](https://hydrogenaud.io/index.php?topic=111060.0) and that's a great place to go for questions and other support issues.
 
@@ -33,13 +35,13 @@ The official discussion thread for Library Tree is located at [HydrogenAudio](ht
 
 #### Two panel mode with artist images and covers
 <kbd> <img src="https://user-images.githubusercontent.com/35600752/155884212-9bea1326-3430-46a4-a86e-3bc4b09e4dd4.png"> </kbd>
-The screenshot is using the dark theme and columns UI with dividing splitter hidden.
+The screenshot is using the dark theme and columns UI with dividing splitter hidden. Left pane: quick setup: artist photos (labels right). Right pane: quick setup: album covers (labels bottom)
 
 #### Flow mode (upper) and tree modes (lower)
 <kbd> <img src="https://user-images.githubusercontent.com/35600752/155903327-9631a328-2f67-4f25-9cbd-316e5f5210b5.png"> </kbd>
 Tree modes shows various node styles with, left to right: user interface theme; dark theme; blend theme; album art background
 
-#### Two panel mode with index and covers
+#### Two panel mode with alphabet index and covers
 <kbd> <img src="https://user-images.githubusercontent.com/35600752/156163852-5d8295f4-3ff2-4ef4-849f-0bd5ce24ba8e.png"> </kbd>
 To set up the above, position two Spider Monkey Panels side by side. Add library tree to each. The screenshot is using the dark theme (display tab) and columns UI with the dividing splitter hidden.
 - Right panel: set source to panel & follow instructions on pop-up
@@ -47,10 +49,15 @@ To set up the above, position two Spider Monkey Panels side by side. Add library
 ```
 $cut(%artist%,1)|%artist%|$if2(%album%,εXtra)|[[%discnumber%.]%tracknumber%. ][%track artist% - ]%title%
 ```
-#### Tree mode with album art background + jump search
-<kbd> <img src="https://user-images.githubusercontent.com/35600752/118255885-b5a41e00-b4a4-11eb-8f19-7a24e5215463.png"> </kbd>
+
+#### Dark mode colours (left and right) + album art background (middle)
+<kbd> <img src="https://user-images.githubusercontent.com/35600752/187039407-6282f695-3ed9-4675-ab64-bd1a42fccc6a.png"> </kbd>
+- LEFT: Quick setup: album covers (labels right)
+- MIDDLE: Tree with jump search and cover as background. Setup: display tab > theme > cover and adjust cover opacity according to taste
+- RIGHT: Tree with item durations, item counts and sort menu. Quick setup: ultra modern
+- Display of durations can be enabled for any tree or album art view on the display tab
 
 ### Credits
 - Original Jscript library search (2013): thanhdat1710
 - Original JS smooth browser design (2015): Br3tt (aka falstaff)
-- [TT-ReBORN](https://github.com/TT-ReBORN) for clean preset inspiration 
+- [TT-ReBORN](https://github.com/TT-ReBORN) for clean preset inspiration and collaborative effort with new sort code
