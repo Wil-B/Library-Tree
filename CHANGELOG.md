@@ -4,7 +4,7 @@
 - Some compatibility fixes for foobar2000 v2.0
 
 ### Changed
-- Arrow & triangle node styles reworked for improved look on foobar2000 v2.0. The originals, now called arrows light and triangles light, can still be used (display tab\node style)
+- Arrow & triangle node styles reworked for improved look on foobar2000 v2.0. The previous styles, now called arrows light and triangles light, can be set on the display tab\node style
 
 <br />
 
