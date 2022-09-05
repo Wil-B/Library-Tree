@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 class Populate {
 	constructor() {
@@ -382,7 +382,7 @@ class Populate {
 	}
 
 	checkNode(gr) {
-		if (sbar.draw_timer || this.nodeStyle != 6) return;
+		if (sbar.draw_timer || this.nodeStyle != 7) return;
 		try {
 			ui.style.symb.SetPartAndStateID(2, 1);
 			ui.style.symb.SetPartAndStateID(2, 2);
@@ -572,7 +572,7 @@ class Populate {
 		} else {
 			let lightCol = ui.getSelCol(ui.col.icon_h, true) == 50;
 			$.gr(1, 1, false, g => {
-				const h = this.nodeStyle != 6 ? g.CalcTextHeight('String', ui.icon.font) / 15 : g.CalcTextHeight('String', ui.font.main) / 20;
+				const h = this.nodeStyle != 7 ? g.CalcTextHeight('String', ui.icon.font) / 15 : g.CalcTextHeight('String', ui.font.main) / 20;
 				this.sy_sz = Math.floor(Math.max(8 * ppt.zoomNode / 100 * h, 5));
 			});
 
@@ -702,7 +702,7 @@ class Populate {
 		if (!this.tree.length || !panel.draw) return gr.GdiDrawText(this.libItems && !panel.search.txt && !ppt.filterBy && ppt.libSource ? 'Loading...' : lib.none, ui.font.main, ui.col.text, ui.sz.margin, panel.search.h, panel.tree.w, ui.row.h, 0x00000004 | 0x00000400);
 		if (panel.imgView) return;
 		const b = $.clamp(Math.round(sbar.delta / ui.row.h + 0.4), 0, this.tree.length - 1);
-		const bar_x = this.nodeStyle && this.nodeStyle < 4 ? 0 : ui.sz.pad;
+		const bar_x = this.nodeStyle && this.nodeStyle < 5 ? 0 : ui.sz.pad;
 		const bar_w = Math.min(ui.sz.margin / 2, ui.sz.sideMarker * 2);
 		const f = Math.min(b + panel.rows, this.tree.length);
 		const nowp_c = [];
@@ -883,20 +883,22 @@ class Populate {
 				if (parent) {
 					if (hover) {
 						gr.DrawString(ui.icon.expand, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
-						if (this.nodeStyle == 2) gr.DrawString(ui.icon.expand, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x + 1, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
-					} else gr.DrawString(ui.icon.expand, ui.icon.font, !selCol ? ui.col.icon_c : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+						gr.DrawString(ui.icon.expand, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x + 1, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+					} else {
+						gr.DrawString(ui.icon.expand, ui.icon.font, !selCol ? ui.col.icon_c : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+						if (this.nodeStyle == 1 ) gr.DrawString(ui.icon.expand, ui.icon.font, !selCol ? ui.col.icon_c : ui.col.textSel, x + 1, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+					}
 				} else {
 					if (hover) {
 						gr.DrawString(ui.icon.collapse, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_c, x - ui.icon.offset, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
-						if (this.nodeStyle == 2) gr.DrawString(ui.icon.collapse, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_c, x - ui.icon.offset, y2 + 1, panel.tree.w - x, ui.row.h, panel.s_lc);
+						gr.DrawString(ui.icon.collapse, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_c, x - ui.icon.offset, y2 + 1, panel.tree.w - x, ui.row.h, panel.s_lc);
 					} else {
 						gr.DrawString(ui.icon.collapse, ui.icon.font, !selCol ? ui.col.icon_e : ui.col.textSel, x - ui.icon.offset, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
-						if (this.nodeStyle == 2) gr.DrawString(ui.icon.collapse, ui.icon.font, !selCol ? ui.col.icon_e : ui.col.textSel, x - ui.icon.offset, y2 + 1, panel.tree.w - x, ui.row.h, panel.s_lc);
-
+						gr.DrawString(ui.icon.collapse, ui.icon.font, !selCol ? ui.col.icon_e : ui.col.textSel, x - ui.icon.offset, y2 + 1, panel.tree.w - x, ui.row.h, panel.s_lc);
 					}
 				}
 				break;
-			case 3: {
+			case 3: case 4: {
 				if (!this.highlight.row && this.fullLineSelection) x += ui.l.w;
 				const y3 = Math.round(y + (ui.row.h - this.sy_sz) / 2 - 2);
 				gr.SetSmoothingMode(4);
@@ -904,13 +906,16 @@ class Populate {
 					if (hover) {
 						if (this.highlight.node) gr.DrawString(ui.icon.expand2, ui.icon.font, !selCol ? ui.col.icon_h : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
 						else gr.DrawString(ui.icon.expand2, ui.icon.font, !selCol ? ui.col.icon_e & 0xCFffffff : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
-					} else gr.DrawString(ui.icon.expand, ui.icon.font, !selCol ? ui.col.icon_c : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+					} else {
+						gr.DrawString(ui.icon.expand, ui.icon.font, !selCol ? ui.col.icon_c : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+						if (this.nodeStyle == 3) gr.DrawString(ui.icon.expand, ui.icon.font, !selCol ? ui.col.icon_c : ui.col.textSel, x + 1, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+					}
 				} else if (hover && this.highlight.node) gr.DrawImage(!selCol ? this.triangle.highlight : this.triangle.select, x - ui.icon.offset, y3, this.sy_sz, this.sy_sz, 0, 0, this.triangle.highlight.Width, this.triangle.highlight.Height);
 				else gr.DrawImage(!selCol ? this.triangle.expand : this.triangle.select, x - ui.icon.offset, y3, this.sy_sz, this.sy_sz, 0, 0, this.triangle.expand.Width, this.triangle.expand.Height);
 				gr.SetSmoothingMode(0);
 				break;
 			}
-			case 4:
+			case 5:
 				if (parent) {
 					if (hover) {
 						gr.DrawString(ui.icon.expand, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x, y2, panel.tree.w - x, ui.row.h - 1, panel.s_lc);
@@ -921,7 +926,7 @@ class Populate {
 					} else gr.DrawString(ui.icon.collapse, ui.icon.font, !selCol ? ui.col.icon_e : ui.col.textSel, x - ui.icon.offset, y2, panel.tree.w - x, ui.row.h - 1, panel.s_lc);
 				}
 				break;
-			case 6:
+			case 7:
 				if (item > 1) item -= 2;
 				ui.style.symb.SetPartAndStateID(2, !item ? 1 : 2);
 				ui.style.symb.DrawThemeBackground(gr, x, y, ui.sz.node, ui.sz.node);

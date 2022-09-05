@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 class PopUpBox {
 	constructor() {
@@ -30,6 +30,7 @@ class PopUpBox {
 			cssPath += 'styles10.css';
 		}
 		this.configHtmlCode = my_utils.getAsset('\\html\\config.html').replace(/href="styles10.css"/i, `href="${cssPath}"`);
+		this.inputHtmlCode = my_utils.getAsset('\\html\\input.html').replace(/href="styles10.css"/i, `href="${cssPath}"`);
 		this.messageHtmlCode = my_utils.getAsset('\\html\\messageBox.html').replace(/href="styles10.css"/i, `href="${cssPath}"`);
 		this.confirmHtmlCode = my_utils.getAsset('\\html\\confirm.html').replace(/href="styles10.css"/i, `href="${cssPath}"`);
 	}
@@ -47,6 +48,12 @@ class PopUpBox {
 			return version;
 		} catch (e) {}
 		return '6.1';
+	}
+
+	input(title, msg, ok_callback, input, def) {
+		utils.ShowHtmlDialog(0, this.inputHtmlCode, {
+			data: [title, msg, 'Cancel', ok_callback, input, def]
+		});
 	}
 
 	isHtmlDialogSupported() {

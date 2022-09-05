@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 class Scrollbar {
 	constructor() {
@@ -223,13 +223,14 @@ class Scrollbar {
 			const ix = img.style.vertical ? (Math.ceil((panel.m.y + sbar.delta - img.panel.y) / img.row.h) - 1) * (!ppt.albumArtFlowMode ? img.columns : 1) : Math.ceil((panel.m.x + sbar.delta - img.panel.x) / img.columnWidth) - 1;
 			if (ix < 0 || ix > pop.tree.length - 1) return;
 			let letter = panel.lines == 1 || !ppt.albumArtFlipLabels ? pop.tree[ix].grp : pop.tree[ix].lot;
-			letter = !panel.colMarker ? letter.substring(0, img.letter.no) : letter.replace(/@!#.*?@!#/g, '').substring(0, img.letter.no);
-			const verticalAdjacent = ppt.albumArtFlowMode && img.style.vertical && img.columnWidth < img.panel.w - img.letter.w * 1.25;
-			const w = Math.min(gr.CalcTextWidth(letter, ui.font.main) + img.letter.w, ui.w);
-			if (img.style.vertical && !verticalAdjacent) gr.FillSolidRect(0, this.y + this.bar.y + this.bar.h / 2 - img.text.h / 2, w + 1, img.text.h + 2, ui.col.bg);
-			if (img.style.vertical && !verticalAdjacent) gr.FillSolidRect(0, this.y + this.bar.y + this.bar.h / 2 - img.text.h / 2, w + 1, img.text.h + 2, ui.col.bg3);
-			if (img.style.vertical) gr.GdiDrawText(letter, ui.font.main, ui.col.text, !verticalAdjacent ? ui.l.w : sbar_x - img.letter.w * 1.25, this.y + this.bar.y + this.bar.h / 2 - img.text.h / 2, w, img.text.h, panel.cc);
-			else gr.GdiDrawText(letter, ui.font.main, ui.col.text, this.x + this.bar.x + this.bar.h / 2 - w / 2, sbar_y - img.text.h, w, img.text.h, panel.cc);
+			if (panel.colMarker) letter = letter.replace(/@!#.*?@!#/g, '');
+			const letter_w = gr.CalcTextWidth(letter, ui.font.main) + img.letter.w;
+			const w1 = Math.min(letter_w, ui.w - img.panel.x - img.letter.w);
+			const w2 = Math.min(letter_w, ui.w - img.panel.x) + 1; 
+			if (img.style.vertical) gr.FillSolidRect(0, this.y + this.bar.y + this.bar.h / 2 - img.text.h / 2, w2, img.text.h + 2, ui.col.bg6);
+			if (img.style.vertical) gr.FillSolidRect(0, this.y + this.bar.y + this.bar.h / 2 - img.text.h / 2, w2, img.text.h + 2, ui.col.bg3);
+			if (img.style.vertical) gr.GdiDrawText(letter, ui.font.main, ui.col.text, ui.l.w + img.letter.w / 2, this.y + this.bar.y + this.bar.h / 2 - img.text.h / 2, w1, img.text.h, panel.lc);
+			else gr.GdiDrawText(letter, ui.font.main, ui.col.text, this.x + this.bar.x + this.bar.h / 2 - w1 / 2, sbar_y - img.text.h, w1, img.text.h, panel.cce);
 		}
 	}
 

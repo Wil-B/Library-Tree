@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 class Panel {
 	constructor() {
@@ -10,6 +10,7 @@ class Panel {
 		const DT_END_ELLIPSIS = 0x00008000;
 
 		this.cc = DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX;
+		this.cce = this.cc | DT_END_ELLIPSIS;
 		this.curPattern = '';
 		this.defaultViews = [];
 		this.defFilterPatterns = [];
@@ -453,6 +454,14 @@ class Panel {
 		this.defaultViews = this.defViewPatterns.map(v => v.type);
 		this.defaultViews.shift();
 
+		const names1 = ['Artist', 'Album Artist', 'Album', 'Album', 'Genre', 'Year'];
+		const names2 = ['Album', 'Album', 'Track', 'Track', 'Album', 'Album'];
+		const albumArtGrpNames = $.jsonParse(ppt.albumArtGrpNames, {});
+		this.defaultViews.forEach((v, i) => {
+			if (!albumArtGrpNames[`${v}1`]) albumArtGrpNames[`${v}1`] = names1[i];
+			if (!albumArtGrpNames[`${v}2`]) albumArtGrpNames[`${v}2`] = names2[i];
+		});
+
 		const dialogViews = [];
 		this.view_ppt = [];
 		let pptNo = 0;
@@ -520,6 +529,19 @@ class Panel {
 		this.dialogGrps.push(this.dialogGrps.shift());
 		this.defViewPatterns.push(this.defViewPatterns.shift());
 		this.view_ppt.push(this.view_ppt.shift());
+		
+		const albumArtGrpNameKeys = Object.keys(albumArtGrpNames);
+		if (albumArtGrpNameKeys.length > 100) {
+			let keysPresent = this.dialogGrps.map(v => `${v.type}1`);
+			albumArtGrpNameKeys.forEach(v => {
+				if (!keysPresent.includes(`${v}1`)) delete albumArtGrpNames[`${v}1`];
+			});
+			keysPresent = this.dialogGrps.map(v => `${v.type}2`);
+			albumArtGrpNameKeys.forEach(v => {
+				if (!keysPresent.includes(`${v}2`)) delete albumArtGrpNames[`${v}2`];
+			});
+		}
+		ppt.albumArtGrpNames = JSON.stringify(albumArtGrpNames);
 	}
 
 	load() {
@@ -689,7 +711,7 @@ class Panel {
 							if (confirmed) {
 								ppt.countsRight = true;
 								ppt.itemShowDuration = false;
-								ppt.nodeStyle = 2;
+								ppt.nodeStyle = 1;
 								ppt.inlineRoot = true;
 								ppt.autoCollapse = false;
 								ppt.treeAutoExpandSingle = false;
@@ -760,7 +782,7 @@ class Panel {
 							if (confirmed) {
 								ppt.countsRight = true;
 								ppt.itemShowDuration = false;
-								ppt.nodeStyle = 4;
+								ppt.nodeStyle = 5;
 								ppt.inlineRoot = true;
 								ppt.autoCollapse = false;
 								ppt.treeAutoExpandSingle = false;
@@ -792,7 +814,7 @@ class Panel {
 							if (confirmed) {
 								ppt.countsRight = true;
 								ppt.itemShowDuration = false;
-								ppt.nodeStyle = 2;
+								ppt.nodeStyle = 1;
 								ppt.inlineRoot = true;
 								ppt.autoCollapse = false;
 								ppt.treeAutoExpandSingle = false;
@@ -847,7 +869,7 @@ class Panel {
 								this.load();
 							}
 						}
-						const caption = 'Quick Setup: Album Covers [Labels Right]';
+						const caption = 'Quick Setup: Covers [Labels Right]';
 						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
@@ -880,7 +902,7 @@ class Panel {
 								this.load();
 							}
 						}
-						const caption = 'Quick Setup: Album Covers [Labels Bottom]';
+						const caption = 'Quick Setup: Covers [Labels Bottom]';
 						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
@@ -913,7 +935,7 @@ class Panel {
 								this.load();
 							}
 						}
-						const caption = 'Quick Setup: Album Covers [Labels Blend]';
+						const caption = 'Quick Setup: Covers [Labels Blend]';
 						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
@@ -956,7 +978,7 @@ class Panel {
 						const continue_confirmation = (status, confirmed) => {
 							if (confirmed) {
 								ppt.countsRight = true;
-								ppt.nodeStyle = 2;
+								ppt.nodeStyle = 1;
 								ppt.inlineRoot = true;
 								ppt.autoCollapse = false;
 								ppt.treeAutoExpandSingle = false;
@@ -1121,7 +1143,6 @@ class Panel {
 		lib.checkView();
 		lib.logTree();
 		img.setRoot();
-		ppt.albumArtLetterNo = Math.max(ppt.albumArtLetterNo, 1);
 		ppt.zoomImg = Math.round($.clamp(ppt.zoomImg, 10, 500));
 
 		let o = !this.imgView ? 'verticalPad' : 'verticalAlbumArtPad';

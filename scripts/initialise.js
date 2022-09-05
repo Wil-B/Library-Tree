@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 const ui = new UserInterface;
 const panel = new Panel;

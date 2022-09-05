@@ -11,6 +11,7 @@ class Images {
 		this.columnWidth = 150;
 		this.database = this.newDatabase();
 		this.end = 1;
+		this.groupField = '';
 		this.items = [];
 		this.overlayHeight = 0;
 		this.panel = {};
@@ -500,8 +501,8 @@ class Images {
 							if (duration) gr.GdiDrawText(duration, ui.font.duration, lotCol, x, y3, this.text.w, this.text.h, this.style.image != 1 && !this.labels.right ? panel.cc : panel.lc)
 						} else {
 							this.checkTooltip(gr, item, x, y1, duration ? y2 : -1, -1, this.text.w, grp, duration, false, ui.font.main, ui.font.main);
-							!panel.colMarker ? gr.GdiDrawText(grp, ui.font.lot, grpCol, x, y1, this.text.w, this.text.h, this.style.image != 1 && !this.labels.right && !item.tt[1] ? panel.cc : panel.lc) : pop.cusCol(gr, grp, item, x, y1, this.text.w, this.text.h, type, nowp, ui.font.main, ui.font.mainEllipsisSpace, 'group');
-							if (duration) gr.GdiDrawText(duration, ui.font.duration, grpCol, x, y2, this.text.w, this.text.h, this.style.image != 1 && !this.labels.right ? panel.cc : panel.lc)
+							!panel.colMarker ? gr.GdiDrawText(grp, ui.font.group, grpCol, x, y1, this.text.w, this.text.h, this.style.image != 1 && !this.labels.right && !item.tt[1] ? panel.cc : panel.lc) : pop.cusCol(gr, grp, item, x, y1, this.text.w, this.text.h, type, nowp, ui.font.main, ui.font.mainEllipsisSpace, 'group');
+							if (duration) gr.GdiDrawText(duration, ui.font.duration, lotCol, x, y2, this.text.w, this.text.h, this.style.image != 1 && !this.labels.right ? panel.cc : panel.lc)
 						}
 					} else {
 						y1 = this.im.y + this.text.y1;
@@ -515,7 +516,7 @@ class Images {
 						} else {
 							this.checkTooltip(gr, item, x, y1, duration ? y2 : -1, -1, this.text.w, grp, false, false, ui.font.group, ui.font.lot, ui.font.duration);
 							!panel.colMarker ? gr.GdiDrawText(grp, ui.font.group, grpCol, x, y1, this.text.w, this.text.h, this.style.image != 1 && !item.tt[1] ? panel.cc : panel.lc) : pop.cusCol(gr, grp, item, x, y1, this.text.w, this.text.h, type, nowp, ui.font.group, ui.font.groupEllipsisSpace, 'group');
-							if (duration) gr.GdiDrawText(duration, ui.font.group, grpCol, x, y2, this.text.w, this.text.h, this.style.image != 1 ? panel.cc : panel.lc)
+							if (duration) gr.GdiDrawText(duration, ui.font.duration, lotCol, x, y2, this.text.w, this.text.h, this.style.image != 1 ? panel.cc : panel.lc)
 						}
 					}
 				}
@@ -683,25 +684,6 @@ class Images {
 			accessed: caller == 'display' ? ++this.accessed : 0
 		}
 		else return image;
-	}
-
-	getDefaultGroupField(n) {
-		switch (n) {
-			case 0:
-				return panel.lines == 2 ? 'Album' : 'Artist';
-			case 1:
-				return panel.lines == 2 ? 'Album' : 'Album Artist';
-			case 2:
-				return panel.lines == 2 ? 'Track' : 'Album';
-			case 3:
-				return panel.lines == 2 ? 'Track' : 'Album';
-			case 4:
-				return panel.lines == 2 ? 'Album' : 'Genre';
-			case 5:
-				return panel.lines == 2 ? 'Album' : 'Year';
-			case 6:
-				return 'Item';
-		}
 	}
 
 	getField(handle, name, arr) {
@@ -879,12 +861,13 @@ class Images {
 	}
 
 	load() {
-		const defaultView = !panel.folderView ? panel.defaultViews.indexOf(panel.grp[ppt.viewBy].type.trim()) : 6;
+		const albumArtGrpNames = $.jsonParse(ppt.albumArtGrpNames, {});
 		const fields = [];
 		const mod = pop.tree.length < 1000 ? 1 : pop.tree.length < 3500 ? Math.round(pop.tree.length / 1000) : 3;
 		const tf_d = FbTitleFormat('[$year(%date%)]');
 		const getItemCount = ppt.itemOverlayType != 1 && ppt.albumArtLabelType == 2 && !this.labels.duration && (pop.nodeCounts == 1 || pop.nodeCounts == 2);
-		let groupField = defaultView != -1 ? this.getDefaultGroupField(defaultView) : '';
+		this.groupField = albumArtGrpNames[`${panel.grp[ppt.viewBy].type.trim()}${panel.lines}`];
+		
 		pop.tree.forEach((v, i) => {
 			const handle = panel.list[v.item[0].start];
 			v.handle = handle;
@@ -894,30 +877,32 @@ class Images {
 			v.lot = panel.lines == 2 ? !ppt.albumArtFlipLabels ? arr[1] : arr[0] : '';
 			v.key = md5.hashStr(handle.Path + handle.SubSong + (panel.lines == 1 ? (arr[0] || 'Unknown') : ((arr[0] || 'Unknown') + ' - ' + (arr[1] || 'Unknown'))) + ppt.artId);
 			if (ppt.itemOverlayType == 2) v.year = tf_d.EvalWithMetadb(handle).replace('0000', '');
-			if (defaultView == -1 && i % mod === 0) this.getField(handle, panel.lines == 1 || ppt.albumArtFlipLabels ? v.grp : v.lot, fields);
+			if (!this.groupField && !panel.folderView && i % mod === 0) this.getField(handle, panel.lines == 1 || ppt.albumArtFlipLabels ? v.grp : v.lot, fields);
 			if (getItemCount) {
 				const count = v.count.replace(/\D/g, '');
 				if (panel.lines == 1 || ppt.albumArtFlipLabels) v.grp += ` (${count})`;
 				else v.lot += ` (${count})`;
 			}
 		});
-		if (defaultView == -1) {
-			groupField = this.getMostFrequentField(fields) || 'Item';
+
+		if (!this.groupField && !panel.folderView) {
+			this.groupField = this.getMostFrequentField(fields) || 'Item';
+			this.groupField = $.titlecase(this.groupField);
 		}
-		groupField = $.titlecase(groupField);
 
 		if (ppt.rootNode) {
-			if (!groupField) groupField = 'Item';
-			const pluralField = pluralize(groupField).replace(/(album|artist|top)s\s/gi, '$1 ').replace(/(similar artist)\s/gi, '$1s ');
+			if (!this.groupField) this.groupField = 'Item';
+			const plurals = this.groupField.split(' ').map(v => pluralize(v));
+			const pluralField = plurals.join(' ').replace(/(album|artist|top|track)s\s/gi, '$1 ').replace(/(similar artist)\s/gi, '$1s ');
 			pop.tree[0].key = pop.tree[0].name;
 			const ln1 = pop.tree.length - 1;
 			const ln2 = panel.list.Count;
-			const nm = `${!ppt.showSource ? 'All' : panel.sourceName} (` + ln1 + (ln1 > 1 ? ` ${pluralField}` : ` ${groupField}`) + `)`;
+			const nm = `${!ppt.showSource ? 'All' : panel.sourceName} (` + ln1 + (ln1 > 1 ? ` ${pluralField}` : ` ${this.groupField}`) + `)`;
 			if (ppt.rootNode == 3) pop.tree[0].grp = nm;
-			else if (panel.lines == 1) pop.tree[0].grp = panel.rootName + (ppt.nodeCounts ? ' (' + (ppt.nodeCounts == 2 && ppt.rootNode != 3 ? ln1 + (ln1 > 1 ? ` ${pluralField}` : ` ${groupField}`) : ln2 + (ln2 > 1 ? ' tracks' : ' track')) + ')' : '');
+			else if (panel.lines == 1) pop.tree[0].grp = panel.rootName + (ppt.nodeCounts ? ' (' + (ppt.nodeCounts == 2 && ppt.rootNode != 3 ? ln1 + (ln1 > 1 ? ` ${pluralField}` : ` ${this.groupField}`) : ln2 + (ln2 > 1 ? ' tracks' : ' track')) + ')' : '');
 			if (panel.lines == 2) {
 				if (ppt.rootNode != 3) pop.tree[0].grp = panel.rootName;
-				pop.tree[0].lot = ppt.nodeCounts == 2 && ppt.rootNode != 3 ? ln1 + (ln1 > 1 ? ` ${pluralField}` : ` ${groupField}`) : ln2 + (ln2 > 1 ? ' tracks' : ' track');
+				pop.tree[0].lot = ppt.nodeCounts == 2 && ppt.rootNode != 3 ? ln1 + (ln1 > 1 ? ` ${pluralField}` : ` ${this.groupField}`) : ln2 + (ln2 > 1 ? ' tracks' : ' track');
 			}
 		}
 		this.metrics();
@@ -943,16 +928,6 @@ class Images {
 			vertical: !ppt.albumArtFlowMode ? true : ui.h - panel.search.h > ui.w - ui.sbar.w
 		}
 		this.letter.show = ppt.albumArtLetter;
-		if (this.letter.show && !panel.folderView) {
-			this.letter.no = ppt.albumArtLetterNo;
-			if (ppt.albumArtYearAuto) {
-				const m = panel.view.replace(/#@#.*?#@#/g, '').match(/%.*?%/);
-				if (m) {
-					const isLeadingDate = /%(<|)date(>|)%/i.test(m[0]);
-					if (isLeadingDate) this.letter.no = 4;
-				}
-			}
-		}
 
 		switch (this.style.vertical) {
 			case true: {
@@ -1022,7 +997,6 @@ class Images {
 					flip: ppt.albumArtFlipLabels,
 					duration: ppt.itemShowDuration ? 1 : 0
 				}
-				//this.labels.counts = false;
 				this.bor.pad = ppt.thumbNailGapStnd == 0 ? Math.round(this.text.h * 1.05) : ppt.thumbNailGapStnd - Math.round(2 * $.scale);
 				this.im.offset = Math.round(!this.labels.hide && !this.labels.overlay ? this.bor.pad / 2 : 0);
 				if (this.labels.hide || this.labels.overlay) {

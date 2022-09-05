@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 const MF_GRAYED = 0x00000001;
 const MF_STRING = 0x00000000;
@@ -199,7 +199,7 @@ class MenuItems {
 		if (d.sortType) {
 			menu.newItem({
 				menuName: d.menuName,
-				str: ['', 'By year', 'Albums by year (grouped)'][d.sortType],
+				str: ['', 'By year', 'Albums by year (group level)'][d.sortType],
 				flags: MF_GRAYED,
 				separator: true
 			});
@@ -221,13 +221,13 @@ class MenuItems {
 		});
 
 		menu.newMenu({menuName: 'Album art', appendTo: mainMenu(), hide: !panel.imgView});
-		['Front', 'Back', 'Disc', 'Icon', 'Artist', 'Group: auto', 'Group: top level', 'Group: two levels', 'Configure album art...'].forEach((v, i) => menu.newItem({
+		['Front', 'Back', 'Disc', 'Icon', 'Artist', 'Group: auto', 'Group: top level', 'Group: two levels', 'Change group name...', 'Configure album art...'].forEach((v, i) => menu.newItem({
 			menuName: 'Album art',
 			str: v,
 			func: () => this.setAlbumart(i),
-			flags: i != 9 || this.items.Count ? MF_STRING : MF_GRAYED,
+			flags: i == 8 && (panel.folderView || ppt.rootNode != 3) ? MF_GRAYED : MF_STRING,
 			checkRadio: i == ppt.artId || i - 5 == ppt.albumArtGrpLevel,
-			separator: i == 4 || i == 7
+			separator: i == 4 || i == 7 || i == 8
 		}));
 
 		menu.newMenu({menuName: 'Quick setup', appendTo: mainMenu()});
@@ -239,7 +239,7 @@ class MenuItems {
 		}));
 
 		if (ppt.albumArtOptionsShow) {
-			['Album covers [labels right]', 'Album covers [labels bottom]', 'Album covers [labels blend]', 'Artist photos [labels right]', 'Album art bigger +', 'Album art smaller -', 'Flow mode', 'Always load preset with current \'view\' pattern'].forEach((v, i) => menu.newItem({
+			['Covers [labels right]', 'Covers [labels bottom]', 'Covers [labels blend]', 'Artist photos [labels right]', 'Album art size +', 'Album art size -', 'Flow mode', 'Always load preset with current \'view\' pattern'].forEach((v, i) => menu.newItem({
 				menuName: 'Quick setup',
 				str: v,
 				func: () => panel.set('quickSetup', i + 5),
@@ -382,7 +382,7 @@ class MenuItems {
 				}
 			}
 		}
-		if (d.value.includes('//') && d.value.includes('%date%')) d.sortType = 1;
+		if (d.value.includes('//') && /%year%|%date%/.test(d.value)) d.sortType = 1;
 		else if (d.value.includes('%album%')) d.sortType = 2;
 
 		d.menuName = d.sortType ? 'Sort selected view' : 'Sort N/A for selected view pattern';
@@ -498,7 +498,32 @@ class MenuItems {
 			case 7:
 				ppt.albumArtGrpLevel = i - 5;
 				break;
-			case 8:
+			case 8: {
+				const key = `${panel.grp[ppt.viewBy].type.trim()}${panel.lines}`;
+				const ok_callback = (status, input) => {
+					if (status != 'cancel') {
+						const albumArtGrpNames = $.jsonParse(ppt.albumArtGrpNames, {});
+						albumArtGrpNames[key] = input;
+						ppt.albumArtGrpNames = JSON.stringify(albumArtGrpNames);
+					}
+				}
+				const caption = 'Change group name';
+				const def = img.groupField;
+				const prompt = 'Enter SINGULAR name, i.e. not plural\n\nName is pinned to VIEW PATTERN and GROUP LEVEL';
+				const fallback = popUpBox.isHtmlDialogSupported() ? popUpBox.input(caption, prompt, ok_callback, '', def) : true;
+				if (fallback) {
+					let ns = '';
+					let status = 'ok';
+					try {
+						ns = utils.InputBox(0, prompt, caption, def, true);
+					} catch(e) {
+						status = 'cancel';
+					}
+					ok_callback(status, ns);
+				}
+				break;
+			}
+			case 9:
 				panel.open('albumArt');
 				break;
 		}
@@ -663,8 +688,8 @@ class MenuItems {
 			if (i) {
 				let str = d.value.split('//');
 				if (str[1]) {
-					str[1] = str[1].trim().replace(/(\|\s*)(.*?%date%)/g,  '$1' + d.sortYear[i] + '$2')
-					if (!/\|.*?%date%/.test(str[1])) str[1] = d.sortYear[i] + str[1];
+					str[1] = str[1].trim().replace(/(\|\s*)(.*?(%year%|%date%))/g,  '$1' + d.sortYear[i] + '$2')
+					if (!/\|.*?(%year%|%date%)/.test(str[1])) str[1] = d.sortYear[i] + str[1];
 					d.value = str[0].trim() + ' // ' + str[1];
 				} else d.value = str[0];
 			}

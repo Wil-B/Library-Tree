@@ -167,6 +167,7 @@ let properties = [
 	['Image Current No Cover', 6, 'curNoCoverImg'],
 	['Image Disk Cache Enabled', true, 'albumArtDiskCache'],
 	['Image Group Level', 0, 'albumArtGrpLevel'],
+	['Image Group Names', JSON.stringify({}), 'albumArtGrpNames'],
 	['Image Flip Labels', false, 'albumArtFlipLabels'],
 	['Image Flow Mode', false, 'albumArtFlowMode'],
 	['Image Follow Selection Flow Mode', true, 'flowModeFollowSelection'],
@@ -180,8 +181,6 @@ let properties = [
 	['Image Root Images', JSON.stringify([]), 'rootImages'],
 	['Image Show Album Art', false, 'albumArtShow'],
 	['Image Show Index Letter', true, 'albumArtLetter'],
-	['Image Show Index Number', 1, 'albumArtLetterNo'],
-	['Image Show Index Year Auto', true, 'albumArtYearAuto'],
 	['Image Show Options', true, 'albumArtOptionsShow'],
 	['Image Style [Front] Regular-0 Auto-Fill-1 Circular-2', 1, 'imgStyleFront'],
 	['Image Style [Back] Regular-0 Auto-Fill-1 Circular-2', 1, 'imgStyleBack'],
@@ -294,5 +293,7 @@ const ppt = new PanelProperties;
 ppt.init('auto', properties);
 ppt.set('Image Pre-Load Images In Disk Cache', null);
 ppt.set('Image Root Collage', null);
+ppt.set('Image Show Index Number', null);
+ppt.set('Image Show Index Year Auto', null);
 ppt.set('Node [Squares]: Windows 0 or 1', null);
 properties = undefined;
