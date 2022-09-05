@@ -51,8 +51,8 @@ $cut(%artist%,1)|%artist%|$if2(%album%,εXtra)|[[%discnumber%.]%tracknumber%. ][
 ```
 
 #### Dark mode colours (left and right) + album art background (middle)
-<kbd> <img src="https://user-images.githubusercontent.com/35600752/187039407-6282f695-3ed9-4675-ab64-bd1a42fccc6a.png"> </kbd>
-- LEFT: Quick setup: album covers (labels right)
+<kbd> <img src="https://user-images.githubusercontent.com/35600752/188288519-e8056889-9dd0-409d-bbfc-feb6026d0eac.png"> </kbd>
+- LEFT: Quick setup: covers (labels right)
 - MIDDLE: Tree with jump search and cover as background. Setup: display tab > theme > cover and adjust cover opacity according to taste
 - RIGHT: Tree with item durations, item counts and sort menu. Quick setup: ultra modern
 - Display of durations can be enabled for any tree or album art view on the display tab
