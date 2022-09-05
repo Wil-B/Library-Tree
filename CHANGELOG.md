@@ -1,3 +1,13 @@
+# v2.3.4
+
+### Added
+- Some compatibility fixes for foobar2000 v2.0
+
+### Changed
+- Arrow & triangle node styles reworked for improved look on foobar2000 v2.0. The originals, now called arrows light and triangles light, can still be used (display tab\node style)
+
+<br />
+
 # v2.3.3
 
 ### Added
