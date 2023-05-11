@@ -10,6 +10,10 @@ Feature rich library viewer and browser for [foobar2000](https://www.foobar2000.
 - Album art flow mode
 - Library and playlist sources
 - Single panel and multiple panel modes
+- Mode presets
+     - browser: keep playing playlist
+     - player: play without a playlist
+     - default: free choice of options
 
 ### REQUIREMENTS:
 - [foobar2000](https://www.foobar2000.org)
