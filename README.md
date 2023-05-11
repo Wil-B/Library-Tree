@@ -13,7 +13,7 @@ Feature rich library viewer and browser for [foobar2000](https://www.foobar2000.
 - Mode presets
      - browser: keep playing playlist
      - player: play without a playlist
-     - default: choice of all options
+     - default: choice of all actions
 
 ### REQUIREMENTS:
 - [foobar2000](https://www.foobar2000.org)
