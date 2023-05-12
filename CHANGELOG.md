@@ -2,7 +2,7 @@
 
 ### Added
 - **New facets / multi-panel mode** (for guidance on set-up, see help in options > views tab)
-	- each panel can contain a facet, tree view or album art browser
+	- each panel can contain a facet, tree view or album art
 	- panels needn't be contiguous
 	- no longer restricted to two panels
 	- **BREAKING change**: if two panel mode previously used, source panel name now has to be entered (menu > source > select source panel)
