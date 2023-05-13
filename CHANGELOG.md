@@ -1,3 +1,62 @@
+# v2.4.0
+
+### Added
+- **New facets / multi-panel mode** (for guidance on set-up, see help in options > views tab)
+	- each panel can contain a facet, tree view or album art
+	- panels needn't be contiguous
+	- no longer restricted to two panels
+	- **BREAKING change**: if two panel mode previously used, source panel name now has to be entered (menu > source > select source panel)
+
+- **Mode presets** (options > behaviour tab)
+	- Browser
+		- keeps playing playlist
+		- easy to browse track lists without interfering with playing playlist, e.g. in album art or facet modes
+		- works best with playback follows cursor OFF & playlist visible
+		- double-click status bar to view playing playlist (custom themes may have a different method)
+	- Player
+		- play and manage without a playlist
+		- easy management options
+	- Default
+		 - free choice as before
+
+- **Statistics** (menu)
+	- bitrate
+	- duration
+	- total size
+	- rating
+	- popularity
+	- date
+	- playback queue
+	- playcount
+	- first played
+	- last played
+	- date added
+
+- **Album art drop shadow** (options > album art > thumbnail drop shadow)
+
+- **$selected**
+	- for use in filters
+	- works like $nowplaying except applies to selected (focused) track
+	- example, artist IS $selected{$meta(artist,0)} displays tracks by selected artist.
+
+- **Before search memory option**: original state shows on clearing search (options > behaviour tab)
+
+- **Shortcut keys**: more added to search box: ctrl+backspace etc
+
+### Changed
+- Library initialisation:
+	- optimisations for foobar2000 v2
+	- no longer initialises for invisible panels, waits until panel shown
+- Jump search improved: repeat presses of same letter advance position
+- Albumart: reinstated ability to set number of index characters that show on scrollbar drag (album art tab)
+- Follow selection (playlist) option now applies to tree and facet views as well as album art (setting now in behaviour tab). Uses foobar2000 preferences  > display > selection viewers setting
+- Made calculating durations more efficient
+
+### Fixed
+- various minor draw and alignment issues
+
+<br />
+
 # v2.3.4
 
 ### Added

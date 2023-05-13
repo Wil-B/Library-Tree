@@ -88,6 +88,10 @@ class PanelProperties {
 
 let properties = [
 	['- Show Html Dialog Unsupported-0 Supported-1 Autocheck-2', 2, 'isHtmlDialogSupported'],
+	['Action Mode', 0, 'actionMode'],
+	['Alt-Click Action', 0, 'altClickAction'],
+
+	['Colour Line Dark', false, 'colLineDark'],
 	['Colour Swap', false, 'swapCol'],
 	['Cover Auto-Fill', true, 'autoFill'],
 	['Cover Opacity (0-100)', 10, 'covAlpha'],
@@ -146,6 +150,7 @@ let properties = [
 	['Custom Font Scroll Icon', 'Segoe UI Symbol', 'butCustIconFont'],
 
 	['Double-Click Action', 1, 'dblClickAction'],
+	['Facet View', false, 'facetView'],
 	['Filter By', 0, 'filterBy'],
 	['Font Size', 16, 'baseFontSize'],
 	['Full Line Selection', true, 'fullLineSelection'],
@@ -153,7 +158,6 @@ let properties = [
 	['Height Auto [Expand/Collapse With Root]', false, 'pn_h_auto'],
 	['Height Auto-Collapse', 100, 'pn_h_min'],
 	['Height Auto-Expand', 578, 'pn_h_max'],
-	['Highlight Nowplaying', false, 'highLightNowplaying'],
 	['Highlight Row', 2, 'highLightRow'],
 	['Highlight Frame Image', false, 'frameImage'],
 	['Highlight Text', false, 'highLightText'],
@@ -166,6 +170,7 @@ let properties = [
 	['Image Current No Artist', 2, 'curNoArtistImg'],
 	['Image Current No Cover', 6, 'curNoCoverImg'],
 	['Image Disk Cache Enabled', true, 'albumArtDiskCache'],
+	['Image Drop Shadow', false, 'albumArtDropShadow'],
 	['Image Group Level', 0, 'albumArtGrpLevel'],
 	['Image Group Names', JSON.stringify({}), 'albumArtGrpNames'],
 	['Image Flip Labels', false, 'albumArtFlipLabels'],
@@ -181,6 +186,8 @@ let properties = [
 	['Image Root Images', JSON.stringify([]), 'rootImages'],
 	['Image Show Album Art', false, 'albumArtShow'],
 	['Image Show Index Letter', true, 'albumArtLetter'],
+	['Image Show Index Number', 0, 'albumArtLetterNo'],
+	['Image Show Index Year Auto', true, 'albumArtYearAuto'],
 	['Image Show Options', true, 'albumArtOptionsShow'],
 	['Image Style [Front] Regular-0 Auto-Fill-1 Circular-2', 1, 'imgStyleFront'],
 	['Image Style [Back] Regular-0 Auto-Fill-1 Circular-2', 1, 'imgStyleBack'],
@@ -204,19 +211,19 @@ let properties = [
 	['Library Source: Fixed Playlist', false, 'fixedPlaylist'],
 	['Library Source: Fixed Playlist Name', '', 'fixedPlaylistName'],
 
-
 	['Limit Menu Expand: 10-6000', 500, 'treeExpandLimit'],
 	['Limit Tree Auto Expand: 10-1000', 350, 'autoExpandLimit'],
 	['Line Padding', 5, 'verticalPad'],
 	['Line Padding Album Art', 2, 'verticalAlbumArtPad'],
 	['Margin', Math.round(8 * $.scale), 'margin'],
+	['Margin Override Top/Bottom (No Top Bar)', Math.round(8 * $.scale), 'marginTopBottom'],
+	['Middle-Click Action', 1, 'mbtnClickAction'],
 	['Mouse: Always Pointer (no hand)', false, 'mousePointerOnly'],
 
 	['Node: Auto Collapse', false, 'autoCollapse'],
 	['Node: Highlight on Hover', true, 'highLightNode'],
 	['Node: Item Counts Align Right', true, 'countsRight'],
 	['Node: Item Counts Hide-0 Tracks-1 Sub-Items-2', 1, 'nodeCounts'],
-	['Node: Item Show Duration', false, 'itemShowDuration'],
 	['Node: Root Hide-0 All Music-1 View Name-2', 1, 'rootNode'],
 	['Node: Root Inline Style', true, 'inlineRoot'],
 	['Node: Root Show Source', false, 'showSource'],
@@ -226,16 +233,24 @@ let properties = [
 	['Node [Squares]: Windows', false, 'winNode'],
 	['Node Custom Icon: +|-', '\uE013|\uE015', 'iconCustom'],
 	['Node Custom Icon: Vertical Offset (%)', -2, 'iconVerticalPad'],
+	
+	['Nowplaying Highlight', false, 'highLightNowplaying'],
+	['Nowplaying Highlight Last', false, 'highLightNowplayinglast'],
+	['Nowplaying Indicator', false, 'nowPlayingIndicator'],
+	['Nowplaying Indicator Last', false, 'nowPlayingIndicatorLast'],
+	['Nowplaying Sidemarker', false, 'nowPlayingSidemarker'],
+	['Nowplaying Sidemarker Last', false, 'nowPlayingSidemarkerLast'],
+
 	['Play on Enter or Send from Menu', false, 'autoPlay'],
-	['Playlist: Add to Current [Alt+Click]', false, 'altAddToCur'],
-	['Playlist: Add to Current [MiddleClick]', true, 'mbtnAddToCur'],
 	['Playlist: Custom Sort', '', 'customSort'],
 	['Playlist: Default', 'Library View', 'libPlaylist'],
 	['Playlist: Default Activate on Change', true, 'activateOnChange'],
 	['Playlist: Panel Selection', 'Library Tree Panel Selection', 'panelSelectionPlaylist'],
+	['Playlist: Last Panel Selection', 'Library Tree Panel Selection', 'lastPanelSelectionPlaylist'],
 	['Playlist: Send to Current', false, 'sendToCur'],
 	['Prefixes to Strip or Swap (| Separator)', 'A|The', 'prefix'],
-	['Preset: Load Current View', true, 'presetLoadCurView'],
+	['Preset: Load Current View', false, 'presetLoadCurView'],
+	['Remember.PreSearch', true, 'rememberPreSearch'],
 	['Remember.Proc', false, 'process'],
 	['Remember.Tree', true, 'rememberTree'],
 	['Remember.View', false, 'rememberView'],
@@ -272,12 +287,28 @@ let properties = [
 	['Show Settings', true, 'settingsShow'],
 	['Side Marker Width', 0, 'sideMarkerWidth'],
 	['Single-Click Action', 1, 'clickAction'],
+	['Statistics Show', 0, 'itemShowStatistics'],
+	['Statistics Show Last', 0, 'itemShowStatisticsLast'],
+	['Statistics Label Show', true, 'labelStatistics'],
+	['Statistics Titleformat Added', '[$date(%added%)]', 'tfAdded'],
+	['Statistics Titleformat Date', '[$year(%date%)]', 'tfDate'],
+	['Statistics Titleformat First Played', '[$date(%first_played%)]', 'tfFirstPlayed'],
+	['Statistics Titleformat Last Played', '[$date(%last_played%)]', 'tfLastPlayed'],
+	['Statistics Titleformat Playcount DataPinningScheme|Field', '%artist%%album%%discnumber%%tracknumber%%title%|%play_count%', 'tfPc'],
+	['Statistics Titleformat Rating', '[%rating%]', 'tfRating'],
+	['Statistics Titleformat Popularity', '[$meta(Track Statistics Last.fm,5[score])]', 'tfPopularity'],
+	['Statistics Tooltips Show', true, 'tooltipStatistics'],
+
 	['Theme', 0, 'theme'],
+	['Theme Panel Source Use Received Item Image', false, 'recItemImage'],
+	['Theme Background Image', false, 'themeBgImage'],
+	['Theme Colour', 3, 'themeColour'],
+	['Theme Light', false, 'themeLight'],
+	['Themed', false, 'themed'], // reserved: don't enable
 	['Touch Step 1-10', 1, 'touchStep'],
 	['Tree Auto Expand', false, 'treeAutoExpand'],
 	['Tree Auto Expand Single Items', false, 'treeAutoExpandSingle'],
 	['Tree Indent', Math.round(19 * $.scale), 'treeIndent'],
-	['Tree List View', false, 'treeListView'],
 	['Touch Control', false, 'touchControl'],
 	['View By', 1, 'viewBy'],
 	['View By Album Art', 1, 'albumArtViewBy'],
@@ -291,9 +322,16 @@ let properties = [
 
 const ppt = new PanelProperties;
 ppt.init('auto', properties);
+if (!$.file('C:\\check_local\\1450343922.txt')) ppt.themed = false;
+
+if (ppt.get('Tree List View')) {
+	ppt.facetView = ppt.get('Tree List View');
+	ppt.set('Tree List View', null);	
+}
 ppt.set('Image Pre-Load Images In Disk Cache', null);
 ppt.set('Image Root Collage', null);
 ppt.set('Image Show Index Number', null);
 ppt.set('Image Show Index Year Auto', null);
+ppt.set('Node: Item Show Duration', null);
 ppt.set('Node [Squares]: Windows 0 or 1', null);
 properties = undefined;

@@ -19,20 +19,11 @@
 	</head>
 	<body>
 		<div id="usage" class="bold">Panel source</div>
-		<div id="div_text1" class="cnt">Receives a selection sent from another library tree panel.</div>
-		<div id="example" class="boldItalic">Example</div>
-		<div id="div_text2" class="cnt"><i>Panel 1:</i>
-Use tree view OR list view + artist photos (Quick Setup can be used).
-Set source to library and behaviour\single-click to select, so items aren't sent to playlist.
+		<div id="div_text1" class="cnt">This enables a multiple panel mode that supports a New Facets style. Panels can also contain a tree view or album art.
 
-<i>Panel 2:</i>
-Use album art view (Quick Setup: Album covers can be used).
-Set source to panel.
-
-<i>Note that panels set to panel source don't send out selections.</i>
-</div>
+See help on the "Views" tab for setup guidance.</div>
 		<div id="playlist" class="bold">Playlist source</div>
-		<div id="div_text3" class="cnt"><i>Active playlist</i>
+		<div id="div_text2" class="cnt"><i>Active playlist</i>
 The sort order of the playlist is used, except for multi-value tag or soft splitter views where sorting is necessary. Items are highlighted in the playlist, not sent.
 
 <i>Other playlists</i>
@@ -76,7 +67,8 @@ These behave the same as the library source.</div>
 			var window_w = 600;
 
 			setTimeout(function() {
-				var window_h = 83 + window.usage.offsetHeight + window.div_text1.offsetHeight + window.example.offsetHeight + window.div_text2.offsetHeight + window.playlist.offsetHeight + window.div_text3.offsetHeight + window.btn_ok.offsetHeight;
+				var window_h = 83 + window.usage.offsetHeight + window.div_text1.offsetHeight + window.div_text2.offsetHeight + window.playlist.offsetHeight + window.btn_ok.offsetHeight;
+				window_w = window_h * 1.5;
 				var left = (screen.width - window_w) / 2;
 				var top = (screen.height - window_h) / 2;
 				window.resizeTo(window_w, window_h);

@@ -2,6 +2,7 @@
 
 class Populate {
 	constructor() {
+		this.alt_dbl_clicked = false;
 		this.childCount = 0;
 		this.clicked_on = 'none';
 		this.cur = [];
@@ -13,11 +14,12 @@ class Populate {
 		this.hotKeys = $.split(ppt.hotKeys, 0);
 		this.hand = false;
 		this.id = '';
-		this.inlineRoot = ppt.rootNode && ppt.inlineRoot;
+		this.inlineRoot = ppt.rootNode && (ppt.inlineRoot || ppt.facetView);
 		this.is_focused = false;
 		this.last_sel = -1;
 		this.lbtnDn = false;
 		this.libItems = false;
+		this.mbtn_dbl_clicked = false;
 		this.nd = [];
 		this.nowp = -1;
 		this.rows = 0;
@@ -28,6 +30,12 @@ class Populate {
 		this.specialChar = '[\\u0027\\u002D\\u00AD\\u058A\\u2010\\u2011\\u2012\\u2013\\u2014\\uFE58]';
 		this.sy_sz = 8;
 		this.tree = [];
+
+		this.cache = {
+			'standard': {},
+			'filter': {},
+			'search': {}
+		}
 
 		this.highlight = {}
 
@@ -53,13 +61,21 @@ class Populate {
 
 		this.row = {
 			cur: 0,
-			i: -1
+			i: -1,
+			lineMax: [],
+			note_w: 0
 		}
 
-		this.subCounts = {
-			'standard': {},
-			'filter': {},
-			'search': {}
+		this.tf = {
+			added: FbTitleFormat(ppt.tfAdded),
+			bitrate: FbTitleFormat('%bitrate%'),
+			bytes: FbTitleFormat('%path%|%filesize%'),
+			date: FbTitleFormat(ppt.tfDate),
+			firstPlayed: FbTitleFormat(ppt.tfFirstPlayed),
+			lastPlayed: FbTitleFormat(ppt.tfLastPlayed),
+			pc: FbTitleFormat(ppt.tfPc),
+			popularity: FbTitleFormat(ppt.tfPopularity),
+			rating: FbTitleFormat(ppt.tfRating)
 		}
 
 		this.triangle = {
@@ -106,10 +122,22 @@ class Populate {
 		});
 	}
 
+	arrayToRange(array) {
+		return array.slice().sort((a, b) => {return a - b;}).reduce((ranges, value) => {
+			const lastIndex = ranges.length - 1;
+			if (lastIndex === -1 || ranges[lastIndex].max !== value - 1) {
+			ranges.push({ min: value, max: value });
+			} else {
+				ranges[lastIndex].max = value;
+			}
+			return ranges;
+		}, []).map(function(range) {return range.min !== range.max ? range.min + '-' + range.max : range.min.toString();});
+	}
+
 	branch(br, base, node, block) {
 		if (!br || br.track) return;
 		const ix = this.showTracks ? 2 : 3;
-		const l = base ? 0 : this.rootNode ? br.tr : br.tr + 1;
+		const l = base ? 0 : this.rootNode ? br.level : br.level + 1;
 		if (base) node = false;
 		let i = 0;
 		let n = '';
@@ -137,7 +165,7 @@ class Populate {
 	}
 
 	branchChange(br) {
-		const arr = br.tr == 0 ? lib.root : this.tree[br.par].child;
+		const arr = br.level == 0 ? lib.root : this.tree[br.par].child;
 		this.childCount = 0;
 		this.getChildCount(arr, br.ix);
 		arr.forEach(v => v.child = []);
@@ -146,8 +174,8 @@ class Populate {
 
 	branchCount(br, base, node, block, key, type) {
 		if (!br || !lib.node.length) return;
-		if (this.subCounts[type][key]) return this.subCounts[type][key];
-		const l = base ? 0 : this.rootNode ? br.tr : br.tr + 1;
+		if (this.cache[type][key]) return this.cache[type][key].value;
+		const l = base ? 0 : this.rootNode ? br.level : br.level + 1;
 		const b = [];
 		let n = '';
 		let n_o = '#get_branch#';
@@ -221,12 +249,15 @@ class Populate {
 			}));
 			this.merge(b, true);
 		}
-		this.subCounts[type][key] = b.length;
+		this.cache[type][key] = {
+			value: b.length,
+			items: []
+		}
 		return b.length;
 	}
 
-	buildTree(br, tr, node, full, block) {
-		const l = !this.rootNode ? tr : tr - 1;
+	buildTree(br, level, node, full, block) {
+		const l = !this.rootNode ? level : level - 1;
 		let i = 0;
 		let j = 0;
 		if (!br[0].sorted) {
@@ -302,23 +333,19 @@ class Populate {
 			br[0].sorted = true;
 		}
 		const br_l = br.length;
-		const imgItemCounts = ppt.itemOverlayType == 1 || (ppt.albumArtLabelType == 2 || ppt.itemShowDuration) && (this.nodeCounts == 1 || this.nodeCounts == 2);
 		const par = this.tree.length - 1;
-		if (tr == 0) this.clearTree();
-		let type;
-		if (this.nodeCounts == 2) type = panel.search.txt ? 'search' : ppt.filterBy ? 'filter' : 'standard';
+		if (level == 0) this.clearTree();
 		br.forEach((v, i) => {
 			j = this.tree.length;
 			const item = this.tree[j] = v;
 			item.top = !i ? true : false;
 			item.bot = i == br_l - 1 ? true : false;
+			item.count = '';
 			item.ix = j;
-			item.tr = tr;
+			item.level = level;
 			item.par = par;
-			let pr;
-			if (this.nodeCounts == 2 && tr > 1) pr = this.tree[par].par;
 			switch (true) {
-				case ppt.treeListView:
+				case ppt.facetView:
 					if (!item.root) item.track = true;
 					break;
 				case l != -1 && !this.showTracks:
@@ -331,20 +358,21 @@ class Populate {
 					break;
 			}
 			if (ui.col.counts && (!item.track || !this.showTracks)) {
-				const str = '@!#' + ui.col.counts + ',' + (this.highlight.text ? ui.col.text_h : ui.col.counts) + ',' + ui.col.textSel + '@!#';
+				const str = '@!#' + ui.col.counts + '`' + (this.highlight.text ? ui.col.text_h : ui.col.counts) + '`' + ui.col.textSel + '@!#';
 				if (!item.nm.endsWith(str)) item.nm += str;
 			}
 			item.name = !panel.noDisplay ? item.nm : item.nm.replace(/#@#.*?#@#/g, '');
-			if (!panel.imgView) {
-				this.getItemCount(item, par, pr, tr, type);
-				if (this.countsRight && !this.durationShow) item.count = item.count.replace(/[()]/g, '');
-			} else if (imgItemCounts) {
-				item.count = this.trackCount(item.item);
-				item.count += item.count > 1 ? ' tracks' : ' track';
-			}
-			if (v.child.length > 0) this.buildTree(v.child, tr + 1, node, !item.root ? false : true);
+			if (v.child.length > 0) this.buildTree(v.child, level + 1, node, !item.root ? false : true);
 		});
+		if (ui.style.squareNode && ui.col.line) {
+			this.row.lineMax = [];
+			this.tree.forEach(v => {
+				const depth = !this.inlineRoot ? v.level : Math.max(v.level - 1, 0)
+				this.row.lineMax[depth] = v.ix
+			});
+		}
 		if (this.rootNode == 3) this.tree[0].name = this.tree[0].child.length > 1 ? panel.rootName.replace('#^^^^#', this.tree[0].child.length) : panel.rootName1;
+		find.initials = null;
 		if (!block) {
 			sbar.setRows(this.tree.length);
 			panel.treePaint();
@@ -355,17 +383,150 @@ class Populate {
 		return ['Segoe UI', 15 * $.scale * ppt.zoomTooltipBut / 100, 0];
 	}
 
-	calcTotalDuration(v) {
+	calcStatistics(v) {
+		const key = 'stat' + this.getKey(v);
+		const type = panel.search.txt ? 'search' : ppt.filterBy ? 'filter' : 'standard';
+		if (this.cache[type][key]) return this.cache[type][key].value;
 		const handleList = new FbMetadbHandleList();
 		let items = [];
 		this.addItems(items, v.item);
-		this.uniq(items);
 		items = [...new Set(items)].sort(this.numSort)
-		items.some(v => {
-			if (v >= panel.list.Count) return true;
-			handleList.Add(panel.list[v]);
+		items.some(w => {
+			if (w >= panel.list.Count) return true;
+			handleList.Add(panel.list[w]);
 		});
-		return utils.FormatDuration(handleList.CalcTotalDuration());
+		let date ='';
+		let dates, indices, ln, n, tf, value, values;
+		switch (ppt.itemShowStatistics) {
+			case 1: // bitrate
+				values = this.tf.bitrate.EvalWithMetadbs(handleList);
+				if (values.length == 1) {
+					value = Number(values[0]) || '';
+				} else {
+					let lengths = FbTitleFormat('%length_seconds_fp%').EvalWithMetadbs(handleList)
+					const total = values.map((v, i) => v * lengths[i]);
+					let totals = total.map(v => parseFloat(v) || '');
+					totals = totals.filter((v, i) => v && lengths[i] ? v : lengths.splice(i, 1));
+					totals = totals.reduce((a, b) => a + b, 0);
+					lengths = lengths.map(v => parseFloat(v)).reduce((a, b) => a + b, 0);
+					value = Number(Math.round(totals / lengths)) || '';
+				}
+				if (panel.imgView && value) value = value + ' kbps';
+				this.cache[type][key] = {
+					value: value,
+					items: items
+				}
+				return value;
+			case 2: { // duration
+				const duration = utils.FormatDuration(handleList.CalcTotalDuration());
+				this.cache[type][key] = {
+					value: duration,
+					items: []
+				}
+				return duration;
+			}
+			case 3: { // total size
+				let bytes = this.tf.bytes.EvalWithMetadbs(handleList);
+				let size = [...new Set(bytes)];
+				size = size.map(v => {
+					const a = v.split('|');
+					return a[a.length - 1];
+				});
+				if (!size.length) return '';
+				size = size.map(v => parseInt(v)).reduce((a, b) => a + b, 0);
+				const formattedBytes = this.formatBytes(size);
+				this.cache[type][key] = {
+					value: formattedBytes,
+					items: items
+				}
+				return formattedBytes;
+			}
+			case 4: // rating
+			case 5: // popularity
+				tf = ppt.itemShowStatistics == 4 ? this.tf.rating : this.tf.popularity;
+				values = tf.EvalWithMetadbs(handleList);
+				values = this.getNumbers(values);
+				values = values.filter(Boolean)
+				ln = values.length;
+				if (!ln) return '';
+				values = values.map(v => parseFloat(v)).reduce((a, b) => a + b, 0);
+				value = Math.ceil(values / ln);
+				if (panel.imgView && this.label) value = (ppt.itemShowStatistics == 4 ? 'Rating ' : 'Popularity ') + value;
+				this.cache[type][key] = {
+					value: value,
+					items: items
+				}
+				return value;
+			case 6: // date (first release)
+			case 9: // firstPlayed
+			case 10: // lastPlayed
+			case 11: // added
+				tf = 
+					ppt.itemShowStatistics == 6 ? this.tf.date : 
+					ppt.itemShowStatistics == 9 ? this.tf.firstPlayed :
+					ppt.itemShowStatistics == 10 ? this.tf.lastPlayed :
+					this.tf.added;
+				dates = tf.EvalWithMetadbs(handleList);
+				dates = dates.filter(v => v !== '');
+				ln = dates.length;
+				if (ln) {
+					if (ln == 1) date = dates[0];
+					else {
+						date = ppt.itemShowStatistics == 6 || ppt.itemShowStatistics == 9 || ppt.itemShowStatistics == 11 ?
+						dates.reduce((pre, cur) => Date.parse(pre) > Date.parse(cur) ? cur : pre) : 
+						dates.reduce((pre, cur) => Date.parse(cur) > Date.parse(pre) ? cur : pre)
+					}
+				}
+				if (!date) return '';
+				if (panel.imgView && this.label) date = ['', '', '', '', '', '', (v.root ? 'First release ' : ''), '', '', 'First played ', 'Last played ', 'Added '][ppt.itemShowStatistics] + date;
+				this.cache[type][key] = {
+					value: date,
+					items: items
+				}
+				return date;
+			case 7: {// queue
+				let index = '';
+				indices = [];
+				const queueHandles = plman.GetPlaybackQueueHandles();
+				for (let i = 0; i < handleList.Count; i++) {
+					for (let k = 0; k < queueHandles.Count; k++) {
+						if (handleList[i].Compare(queueHandles[k])) indices.push(k + 1);
+					}
+				}
+				ln = indices.length;
+				if (ln) {
+					if (ln == 1) index = indices[0];
+					else {
+						index = this.arrayToRange(indices);
+						index.join();
+					}
+				}
+				if (!index) return '';
+				if (panel.imgView && this.label) index = 'Queue ' + index;
+				this.cache[type][key] = {
+					value: index,
+					items: items
+				}
+				return index;
+			}
+			case 8: {// playcount
+				let playcount = this.tf.pc.EvalWithMetadbs(handleList);
+				const played = [...new Set(playcount)];
+				n = played.map(v => {
+					const a = v.split('|');
+					return a[a.length - 1];
+				});
+				playcount = this.getNumbers(n);
+				if (!playcount.length) return '';
+				playcount = n.map(v => parseInt(v)).reduce((a, b) => a + b, 0);
+				if (panel.imgView) playcount = (this.label ? 'Played ' : '')  + playcount + 'x';
+				this.cache[type][key] = {
+					value: playcount,
+					items: items
+				}
+				return playcount;
+			}
+		}
 	}
 
 	checkAutoHeight() {
@@ -375,10 +536,10 @@ class Populate {
 	check_ix(br, x, y, type) {
 		if (panel.imgView) return true;
 		if (!br) return false;
-		const tr = !this.inlineRoot ? br.tr : Math.max(br.tr - 1, 0);
+		const level = !this.inlineRoot ? br.level : Math.max(br.level - 1, 0);
 		const icon_w = this.inlineRoot && br.ix == 0 ? 0 : ui.icon.w + (!this.fullLineSelection ? ui.l.wf : 0);
-		return type ? (x >= Math.round(this.treeIndent * tr + ui.sz.margin) && x < Math.round(this.treeIndent * tr + ui.sz.margin) + br.w + icon_w) :
-			(x >= Math.round(this.treeIndent * tr + ui.sz.margin) + icon_w) && x < Math.min(Math.round(this.treeIndent * tr + ui.sz.margin) + icon_w + br.w, panel.tree.w);
+		return type ? (x >= Math.round(this.treeIndent * level + ui.sz.margin) && x < Math.round(this.treeIndent * level + ui.sz.margin) + br.w + icon_w) :
+			(x >= Math.round(this.treeIndent * level + ui.sz.margin) + icon_w) && x < Math.min(Math.round(this.treeIndent * level + ui.sz.margin) + icon_w + br.w, panel.tree.w);
 	}
 
 	checkNode(gr) {
@@ -399,11 +560,11 @@ class Populate {
 		if (im >= this.tree.length || im < 0 || x > ui.w - ui.sbar.sp) return -1;
 		if (panel.imgView) return im;
 		const item = this.tree[im];
-		const tr = !this.inlineRoot ? item.tr : Math.max(item.tr - 1, 0);
-		if (x < Math.round(this.treeIndent * tr) + ui.icon.w + ui.sz.margin && (!item.track || item.root)) this.m.br = im;
+		const level = !this.inlineRoot ? item.level : Math.max(item.level - 1, 0);
+		if (x < Math.round(this.treeIndent * level) + ui.icon.w + ui.sz.margin && (!item.track || item.root)) this.m.br = im;
 		return im;
 	}
-
+	
 	check_tooltip(ix, x, y) {
 		if (this.lbtnDn || sbar.draw_timer) return;
 		const item = this.tree[ix];
@@ -411,11 +572,19 @@ class Populate {
 		if (!item) return;
 		switch (true) {
 			case !panel.imgView: {
-				text = (!panel.colMarker ? item.name : item.name.replace(/@!#.*?@!#/g, '')) + (!this.countsRight || this.durationShow ? item.count : '');
-				text = text.replace(/&/g, '&&');
+				const trace1 = item.tt && item.tt.needed && x >= item.tt.x && x <= item.tt.x + item.tt.w && y >= item.tt.y && y <= item.tt.y + ui.row.h;
+				const trace2 = item.stats_tt && item.stats_tt.needed && x >= item.stats_tt.x + item.stats_tt.w && x <= ui.w - ui.sz.marginRight && y >= item.stats_tt.y && y <= item.stats_tt.y + ui.row.h * 0.9;
+				if (trace2) {
+					text = this.statisticsShow ? 
+					(item.statistics !== undefined ? this.statistics[this.statisticsShow] + ': ' + item.statistics : '') :
+					(item.count ? ['', 'Tracks', 'Items'][this.nodeCounts] + ':' + item.count : '');
+					
+				} else if (trace1) {
+					text = (!panel.colMarker ? item.name : item.name.replace(/@!#.*?@!#/g, '')) + (!this.countsRight || this.statisticsShow ? item.count : '');
+					text = text.replace(/&/g, '&&');
+				}
 				if (text != tooltip.Text) this.deactivateTooltip();
-				const trace = item.tt && item.tt.needed && x >= item.tt.x && x <= item.tt.x + item.tt.w && y >= item.tt.y && y <= item.tt.y + ui.row.h;
-				if (!trace) {
+				if (!trace1 && !trace2 || !item.tt && !item.stats_tt) {
 					this.deactivateTooltip();
 					return;
 				}
@@ -434,6 +603,8 @@ class Populate {
 					trace2 = item.tt.y2 == -1 ? false : x >= item.tt.x && x <= item.tt.x + item.tt.w && y >= item.tt.y2 && y <= item.tt.y2 + img.text.h;
 					trace3 = item.tt.y3 == -1 ? false : x >= item.tt.x && x <= item.tt.x + item.tt.w && y >= item.tt.y3 && y <= item.tt.y3 + img.text.h;
 					text = trace1 || trace2 || trace3 ? item.tt.text : '';
+					if (panel.colMarker) text = text.replace(/@!#.*?@!#/g, '');
+					text = text.replace(/&/g, '&&');
 					if (text != tooltip.Text) this.deactivateTooltip();
 					if (!trace1 && !trace2 && !trace3 || !item.tt[1] && !item.tt[2] && !item.tt[3]) {
 						this.deactivateTooltip();
@@ -457,6 +628,12 @@ class Populate {
 			needed: txt_w > w,
 			x: x,
 			y: y,
+			w: w
+		}
+		item.stats_tt = {
+			needed: !this.tooltipStatistics || !this.statisticsShow || item.root ? false : [false, true, false, true, true, true, true, true, true, true, true, true][this.statisticsShow] && item.statistics !== undefined,
+			x: x,
+			y: y + ui.row.h * 0.1,
 			w: w
 		}
 	}
@@ -496,16 +673,16 @@ class Populate {
 	clickedOn(x, y, item) {
 		if (panel.imgView) return 'text';
 		if (this.inlineRoot && item.ix == 0) return this.check_ix(item, x, y, false) ? 'text' : 'none';
-		const tr = !this.inlineRoot ? item.tr : Math.max(item.tr - 1, 0);
-		return x < Math.round(this.treeIndent * tr) + ui.icon.w + ui.sz.margin ? 'node' : this.check_ix(item, x, y, false) ? 'text' : 'none';
+		const level = !this.inlineRoot ? item.level : Math.max(item.level - 1, 0);
+		return x < Math.round(this.treeIndent * level) + ui.icon.w + ui.sz.margin ? 'node' : this.check_ix(item, x, y, false) ? 'text' : 'none';
 	}
 
 	collapseAll() {
 		let ic = this.get_ix(0, panel.tree.y + ui.row.h / 2, true, false);
 		if (ic >= this.tree.length || ic < 0) return;
-		let j = this.tree[ic].tr;
+		let j = this.tree[ic].level;
 		if (this.rootNode) j -= 1;
-		if (this.tree[ic].tr != 0) {
+		if (this.tree[ic].level != 0) {
 			const par = this.tree[ic].par;
 			const pr_pr = [];
 			for (let m = 1; m < j + 1; m++) {
@@ -570,7 +747,7 @@ class Populate {
 				});
 			}
 		} else {
-			let lightCol = ui.getSelCol(ui.col.icon_h, true) == 50;
+			let lightCol = ui.isLightCol(ui.col.icon_h);
 			$.gr(1, 1, false, g => {
 				const h = this.nodeStyle != 7 ? g.CalcTextHeight('String', ui.icon.font) / 15 : g.CalcTextHeight('String', ui.font.main) / 20;
 				this.sy_sz = Math.floor(Math.max(8 * ppt.zoomNode / 100 * h, 5));
@@ -582,7 +759,7 @@ class Populate {
 				g.FillPolygon(ui.col.icon_h, 1, [sz, 0, sz, sz, 0, sz]);
 				g.SetSmoothingMode(0);
 			});
-			lightCol = ui.getSelCol(ui.col.icon_e, true) == 50;
+			lightCol = ui.isLightCol(ui.col.icon_e);
 			this.triangle.expand = $.gr(sz, sz, true, g => {
 				g.SetSmoothingMode(4);
 				g.FillPolygon(ui.col.icon_e & (lightCol ? 0xC0ffffff : 0xBAffffff), 1, [sz, 0, sz, sz, 0, sz]);
@@ -698,54 +875,55 @@ class Populate {
 	}
 
 	draw(gr) {
-		if (lib.empty) return gr.GdiDrawText(lib.empty, ui.font.main, ui.col.text, ui.sz.margin, panel.search.h, panel.tree.w, ui.row.h * 3, 0x00000004 | 0x00000400);
-		if (!this.tree.length || !panel.draw) return gr.GdiDrawText(this.libItems && !panel.search.txt && !ppt.filterBy && ppt.libSource ? 'Loading...' : lib.none, ui.font.main, ui.col.text, ui.sz.margin, panel.search.h, panel.tree.w, ui.row.h, 0x00000004 | 0x00000400);
+		if (lib.empty) return gr.GdiDrawText(lib.empty, ui.font.main, ui.col.text, ui.sz.margin, panel.search.h, panel.tree.w, ui.row.h * 3);
+		if (!this.tree.length || !panel.draw) return gr.GdiDrawText(this.libItems && !panel.search.txt && !ppt.filterBy && ppt.libSource ? 'Loading...\n\n' : lib.none, ui.font.main, ui.col.text, ui.sz.margin, panel.search.h, panel.tree.w, ui.row.h * 3);
 		if (panel.imgView) return;
 		const b = $.clamp(Math.round(sbar.delta / ui.row.h + 0.4), 0, this.tree.length - 1);
 		const bar_x = this.nodeStyle && this.nodeStyle < 5 ? 0 : ui.sz.pad;
-		const bar_w = Math.min(ui.sz.margin / 2, ui.sz.sideMarker * 2);
 		const f = Math.min(b + panel.rows, this.tree.length);
+		const nm = [];
 		const nowp_c = [];
 		const row = [];
 		const y1 = Math.round(panel.search.h - sbar.delta + panel.node_y) + Math.floor(ui.sz.node / 2);
 		let i = 0;
 		let item_x = 0;
 		let item_y = 0;
-		let nm = [];
 		let sel_x = 0;
 		let sel_w = 0;
-		let tr = 0;
+		let level = 0;
 		this.checkNode(gr);
 		if (!ui.style.squareNode) gr.SetTextRenderingHint(5);
 		this.rows = 0;
 		if (ui.style.squareNode && ui.col.line) {
-			tr = !this.inlineRoot ? this.tree[b].tr : Math.max(this.tree[b].tr - 1, 0);
-			for (let j = 0; j <= tr; j++) row[j] = b;
-			if (tr > 0) {
-				let top = this.tree[b].par;
-				for (i = 1; i < tr; i++) top = this.tree[top].par;
-				if (this.tree[top].bot) row[0] = undefined;
-			}
+			level = !this.inlineRoot ? this.tree[b].level : Math.max(this.tree[b].level - 1, 0);
+			for (let j = 0; j <= level; j++) row[j] = b;
 		}
 		for (i = b; i < f; i++) {
 			const item = this.tree[i];
-			nm[i] = item.name + (i || this.rootNode != 3 || this.nodeCounts == 1 && (this.countsRight || this.durationShow) ? (!this.countsRight || this.durationShow ? item.count : '') : '');
-			if (item.id != this.id) {
-				item.name_w = gr.CalcTextWidth(!panel.colMarker ? nm[i] : nm[i].replace(/@!#.*?@!#/g, ''), ui.font.main);
-				item.count_w = this.countsRight || this.durationShow ? gr.CalcTextWidth(!this.durationShow ? item.count : item.duration, ui.font.main) + ((!this.durationShow ? item.count : item.duration) ? ui.row.h * 0.2 : 0) : 0;
+			this.getItemCount(item);
+			nm[i] = item.name + (i || this.rootNode != 3 || this.nodeCounts == 1 && (this.countsRight || this.statisticsShow) ? (!this.countsRight || this.statisticsShow ? item.count : '') : '');
+			const counts = !this.statisticsShow ? item.count : item.statistics;
+			if (this.highlight.nowPlayingShow && !item.root && this.inRange(this.nowp, item.item)) nowp_c.push(i);
+			item.np = nowp_c.includes(i) || panel.textDiffHighlight && this.m.i == i ? '\u266B  ' : '';
+			if (item.np && item.id != this.id) this.row.note_w = gr.CalcTextWidth(item.np, ui.font.main);
+			if (item.id != this.id ||item. np) {
+				let note_w = !item.np || item.track ? 0 : this.row.note_w;
+				item.name_w = gr.CalcTextWidth(!panel.colMarker ? nm[i] : nm[i].replace(/@!#.*?@!#/g, ''), ui.font.main) - note_w;
+				item.count_w = this.nodeCounts && this.countsRight || this.statisticsShow ? 
+					gr.CalcTextWidth(counts || '000', ui.font.small) + (counts ? ui.row.h * 0.2 : 0) : 0;
 				if (!this.fullLineSelection) {
 					item.w = item.name_w;
 					item.id = this.id;
 				}
 			}
-			tr = !this.inlineRoot ? item.tr : Math.max(item.tr - 1, 0);
-			if (this.highlight.nowPlaying && !item.root && this.inRange(this.nowp, item.item)) nowp_c.push(i);
+
+			level = !this.inlineRoot ? item.level : Math.max(item.level - 1, 0);
 			item_y = Math.round(ui.row.h * i + panel.search.h - sbar.delta);
 			if (item_y < panel.filter.y) {
 				this.rows++;
 				if (item.sel && ui.col.bgSel != 0) {
 					const icon_w = !this.inlineRoot || i ? ui.icon.w : 0;
-					item_x = Math.round(this.treeIndent * tr + ui.sz.margin) + icon_w;
+					item_x = Math.round(this.treeIndent * level + ui.sz.margin) + icon_w;
 					sel_x = Math.round(item_x - ui.sz.sel);
 					if (this.inlineRoot && !i) sel_x = Math.max(sel_x - ui.sz.sel, 0);
 					sel_w = Math.min(item.name_w + ui.sz.sel * 2, panel.tree.w - sel_x - item.count_w - 1);
@@ -753,25 +931,23 @@ class Populate {
 						sel_x = ui.sz.pad;
 						sel_w = panel.tree.sel.w - ui.l.w;
 					}
-					if (!nowp_c.includes(i)) {
-						if (this.fullLineSelection && this.sbarShow == 1 && ui.sbar.type == 2) {
-							if (this.highlight.row || !this.fullLineSelection) {
-								gr.FillSolidRect(sel_x, item_y, sel_w + ui.l.w, ui.row.h, ui.col.bgSel);
-								gr.FillSolidRect(sel_x, item_y, sel_w + ui.l.w, ui.l.w, ui.col.bgSelframe);
-								gr.FillSolidRect(sel_x, item_y + ui.row.h, sel_w + ui.l.w, ui.l.w, ui.col.bgSelframe);
-							} else {
-								gr.FillSolidRect(sel_x, item_y, sel_w + ui.l.w, ui.l.w, ui.col.bgSelframe);
-								gr.FillSolidRect(sel_x, item_y + ui.row.h, sel_w + ui.l.w, ui.l.w, ui.col.bgSelframe);
-								gr.FillSolidRect(bar_x, item_y, bar_w, ui.row.h, ui.col.sideMarker);
-							}
+					if (this.fullLineSelection && this.sbarShow == 1 && ui.sbar.type == 2) {
+						if (this.highlight.row || !this.fullLineSelection) {
+							gr.FillSolidRect(sel_x, item_y, sel_w + ui.l.w, ui.row.h, ui.col.bgSel);
+							gr.FillSolidRect(sel_x, item_y, sel_w + ui.l.w, ui.l.w, ui.col.bgSelframe);
+							gr.FillSolidRect(sel_x, item_y + ui.row.h, sel_w + ui.l.w, ui.l.w, ui.col.bgSelframe);
 						} else {
-							if (this.highlight.row || !this.fullLineSelection) {
-								gr.FillSolidRect(sel_x, item_y, sel_w, ui.row.h, ui.col.bgSel);
-								gr.DrawRect(sel_x + Math.floor(ui.l.w / 2), item_y, sel_w, ui.row.h, ui.l.w, ui.col.bgSelframe);
-							} else {
-								gr.DrawRect(sel_x + Math.floor(ui.l.w / 2), item_y, sel_w, ui.row.h, ui.l.w, ui.col.bgSelframe);
-								gr.FillSolidRect(bar_x, item_y, bar_w, ui.row.h, ui.col.sideMarker);
-							}
+							gr.FillSolidRect(sel_x, item_y, sel_w + ui.l.w, ui.l.w, ui.col.bgSelframe);
+							gr.FillSolidRect(sel_x, item_y + ui.row.h, sel_w + ui.l.w, ui.l.w, ui.col.bgSelframe);
+							if (!this.highlight.nowPlaying) gr.FillSolidRect(bar_x, item_y, ui.sz.sideMarker, ui.row.h, ui.col.sideMarker);
+						}
+					} else {
+						if (this.highlight.row || !this.fullLineSelection) {
+							gr.FillSolidRect(sel_x, item_y, sel_w, ui.row.h, ui.col.bgSel);
+							gr.DrawRect(sel_x + Math.floor(ui.l.w / 2), item_y, sel_w, ui.row.h, ui.l.w, ui.col.bgSelframe);
+						} else {
+							gr.DrawRect(sel_x + Math.floor(ui.l.w / 2), item_y, sel_w, ui.row.h, ui.l.w, ui.col.bgSelframe);
+							if (!this.highlight.nowPlayingSidemarker) gr.FillSolidRect(bar_x, item_y, ui.sz.sideMarker, ui.row.h, ui.col.sideMarker);
 						}
 					}
 				}
@@ -783,14 +959,14 @@ class Populate {
 		}
 		for (i = b; i < f; i++) {
 			const item = this.tree[i];
-			const tr = !this.inlineRoot ? item.tr : Math.max(item.tr - 1, 0);
+			const level = !this.inlineRoot ? item.level : Math.max(item.level - 1, 0);
 			item_y = Math.round(ui.row.h * i + panel.search.h - sbar.delta);
 			if (item_y < panel.filter.y) {
-				item_x = Math.round(this.treeIndent * tr + ui.sz.margin);
-				if (this.inlineRoot && !item.tr) item_x = ui.sz.marginSearch;
+				item_x = Math.round(this.treeIndent * level + ui.sz.margin);
+				if (this.inlineRoot && !item.level) item_x = ui.sz.marginSearch;
 				if ((this.fullLineSelection && this.row.i == i || this.m.i == i)) {
 					sel_x = Math.round(item_x - ui.sz.sel);
-					if (!this.inlineRoot || item.tr) sel_x += ui.icon.w;
+					if (!this.inlineRoot || item.level) sel_x += ui.icon.w;
 					sel_w = Math.min(item.name_w + ui.sz.sel * 2, panel.tree.w - sel_x - item.count_w - 1);
 					if (this.fullLineSelection) {
 						sel_x = ui.sz.pad;
@@ -809,25 +985,25 @@ class Populate {
 				if (this.highlight.row == 1 && this.row.i == i && !sbar.draw_timer) gr.FillSolidRect(ui.l.w, item_y, ui.sz.sideMarker, ui.row.h, ui.col.sideMarker);
 
 				if (ui.style.squareNode && ui.col.line) {
-					if (item.top) row[tr] = i;
+					if (item.top) row[level] = i;
 					const ff = sbar.rows_drawn == this.rows || i < sbar.rows_drawn ? f : f - 1;
 					if (item.bot || i === ff - 1) {
-						for (let level = (i === ff - 1 ? 0 : tr); level <= tr; level++) {
-							if (row[level] !== undefined && (this.inlineRoot || !item.root)) {
-								let start = row[level];
-								let end = i + (item.bot && level === tr ? .5 : 1);
+						for (let depth = (i === ff - 1 ? 0 : level); depth <= level; depth++) {
+							if (row[depth] !== undefined && (this.inlineRoot || !item.root)) {
+								const start = row[depth];
+								let end = i + (item.bot && depth === level ? 0.5 : 1);
 								if (item_y >= panel.filter.y) end -= 1;
-								const l_x = Math.round(this.treeIndent * level + ui.sz.margin) + Math.floor(ui.sz.node / 2) - ui.l.wf;
+								const l_x = Math.round(this.treeIndent * depth + ui.sz.margin) + Math.floor(ui.sz.node / 2) - ui.l.wf;
 								let l_y = Math.round(ui.row.h * start + panel.search.h - sbar.delta);
 								let l_h = Math.ceil(ui.row.h * (end - start)) + ui.l.wc;
 								if (!start) {
 									l_y += ui.row.h / 2;
 									l_h -= ui.row.h / 2;
 								}
-								if (!this.inlineRoot || item.tr) gr.FillSolidRect(l_x, l_y, ui.l.w, l_h, ui.col.line);
+								if (i <= this.row.lineMax[depth] && (!this.inlineRoot || item.level)) gr.FillSolidRect(l_x, l_y, ui.l.w, l_h, ui.col.line);
 							}
 						}
-						if (item.bot) row[tr] = undefined;
+						if (item.bot) row[level] = undefined;
 					}
 				}
 			}
@@ -835,34 +1011,38 @@ class Populate {
 
 		for (i = b; i < f; i++) {
 			const item = this.tree[i];
-			const tr = !this.inlineRoot ? item.tr : Math.max(item.tr - 1, 0);
+			const level = !this.inlineRoot ? item.level : Math.max(item.level - 1, 0);
 			item_y = Math.round(ui.row.h * i + panel.search.h - sbar.delta);
 			if (item_y < panel.filter.y) {
-				item_x = Math.round(this.treeIndent * tr + ui.sz.margin);
-				if (this.inlineRoot && !item.tr) item_x = ui.sz.marginSearch;
+				item_x = Math.round(this.treeIndent * level + ui.sz.margin);
+				if (this.inlineRoot && !item.level) item_x = ui.sz.marginSearch;
 				if (ui.style.squareNode) {
-					if (!item.track && (!this.inlineRoot || item.tr)) {
+					if (!item.track && (!this.inlineRoot || item.level)) {
 						const y2 = ui.row.h * i + y1 - ui.l.wf;
 						if (ui.col.line) gr.FillSolidRect(item_x + ui.sz.node, y2, ui.l.s1, ui.l.w, ui.col.line);
 						this.drawNode(gr, item.child.length < 1 ? this.m.br != i ? 0 : 2 : this.m.br != i ? 1 : 3, item_x, item_y + panel.node_y);
-					} else if (ui.col.line && (!this.inlineRoot || item.tr)) {
+					} else if (ui.col.line && (!this.inlineRoot || item.level)) {
 						const y2 = Math.round(panel.search.h - sbar.delta) + Math.ceil(ui.row.h * (i + 0.5)) - ui.l.wf;
 						gr.FillSolidRect(item_x + ui.l.s2, y2, ui.l.s3, ui.l.w, ui.col.line);
 					}
-				} else if (!item.track && (!this.inlineRoot || item.tr)) this.drawNode(gr, item, item_x, item_y, item.child.length < 1, this.m.br == i, item.sel);
-				if (!this.inlineRoot || item.tr) item_x += ui.icon.w + (!this.fullLineSelection ? ui.l.wf : 0);
+				} else if (!item.track && (!this.inlineRoot || item.level)) this.drawNode(gr, item, item_x, item_y, item.child.length < 1, this.m.br == i, item.sel);
+				if (!this.inlineRoot || item.level) item_x += ui.icon.w + (!this.fullLineSelection ? ui.l.wf : 0);
 				const w = panel.tree.w - item_x - ui.sz.sel - item.count_w;
 				this.checkTooltip(item, item_x, item_y, item.name_w, w);
 				if (this.fullLineSelection && item.id != this.id) {
 					item.w = panel.tree.w - item_x;
 					item.id = this.id;
 				}
-				let np = this.m.i == i && this.highlight.row == 2 ? false : nowp_c.includes(i) || panel.textDiffHighlight && this.m.i == i;
-				const txt_co = np ? ui.col.nowp : item.sel && this.fullLineSelection ? (this.highlight.row ? ui.col.textSel : ui.col.text) : this.m.i == i && this.highlight.text ? ui.col.text_h : ui.col.counts || ui.col.count;
+				if (item.np && this.highlight.nowPlayingSidemarker) {
+					gr.FillSolidRect(ui.l.w, item_y, ui.sz.sideMarker, ui.row.h, ui.col.nowp);
+				}
+				if (item.np && this.highlight.nowPlayingIndicator && item.track) nm[i] = item.np + nm[i];
+				const np = item.np && this.highlight.nowPlaying;
+				const txt_co = np && !item.sel ? ui.col.nowp : item.sel && this.fullLineSelection ? (this.highlight.row ? ui.col.textSel : ui.col.text) : this.m.i == i && this.highlight.text ? ui.col.text_h : ui.col.counts || ui.col.count;
 				const type = item.sel ? (this.highlight.row || !this.fullLineSelection ? 2 : 0) : this.m.i == i && this.highlight.text ? 1 : 0;
-				const txt_c = np ? ui.col.nowp : ui.col.txtArr[type];
+				const txt_c = np && !item.sel ? ui.col.nowp : ui.col.txtArr[type];
 				!panel.colMarker ? gr.GdiDrawText(nm[i], ui.font.main, txt_c, item_x, item_y, w, ui.row.h, panel.lc) : this.cusCol(gr, nm[i], item, item_x, item_y, w, ui.row.h, type, np, ui.font.main, ui.font.mainEllipsisSpace, 'text');
-				if (this.countsRight || this.durationShow) gr.GdiDrawText(!this.durationShow ? item.count : item.duration, ui.font.small, txt_co, item_x, item_y, panel.tree.w - item_x, ui.row.h, panel.rc);
+				if (this.countsRight || this.statisticsShow) gr.GdiDrawText(!this.statisticsShow ? item.count : item.statistics, !item.root || !this.label ?  ui.font.small : ui.font.label, txt_co, item_x, item_y, panel.tree.w - item_x, ui.row.h, panel.rc);
 			}
 		}
 	}
@@ -886,7 +1066,7 @@ class Populate {
 						gr.DrawString(ui.icon.expand, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x + 1, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
 					} else {
 						gr.DrawString(ui.icon.expand, ui.icon.font, !selCol ? ui.col.icon_c : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
-						if (this.nodeStyle == 1 ) gr.DrawString(ui.icon.expand, ui.icon.font, !selCol ? ui.col.icon_c : ui.col.textSel, x + 1, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+						if (this.nodeStyle == 1) gr.DrawString(ui.icon.expand, ui.icon.font, !selCol ? ui.col.icon_c : ui.col.textSel, x + 1, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
 					}
 				} else {
 					if (hover) {
@@ -956,9 +1136,9 @@ class Populate {
 			let par = 0;
 			this.tree.forEach((v, j, arr) => {
 				if (v.sel) {
-					j = v.tr;
+					j = v.level;
 					if (this.rootNode) j -= 1;
-					if (v.tr != 0) {
+					if (v.level != 0) {
 						par = v.par;
 						for (m = 1; m < j + 1; m++) {
 							if (m == 1) pr_pr[m] = par;
@@ -988,7 +1168,7 @@ class Populate {
 		panel.treePaint();
 		if (nm) {
 			this.tree.some((v, i, arr) => {
-				nm_n = (v.tr ? arr[v.par].srt[0] : '') + v.srt[0];
+				nm_n = (v.level ? arr[v.par].srt[0] : '') + v.srt[0];
 				nm_n = nm_n.toUpperCase();
 				if (nm_n == nm) {
 					h = i;
@@ -1086,6 +1266,18 @@ class Populate {
 		this.showItem(i);
 	}
 
+	formatBytes(bytes, decimals = 1) {
+		if (!+bytes) return '0 Bytes'
+
+		const k = 1024
+		const dm = decimals < 0 ? 0 : decimals
+		const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+
+		const i = Math.floor(Math.log(bytes) / Math.log(k))
+
+		return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
+	}
+
 	getAllCombinations(n) {
 		n = this.fixMarkers(n);
 		if (n.includes('^@^') && n.includes(panel.softSplitter)) return this.imgView(n);
@@ -1129,10 +1321,34 @@ class Populate {
 		});
 	}
 
-	getItemCount(item, par, pr, tr, type) {
-		if (this.durationShow) item.duration = this.calcTotalDuration(item);
-		item.count = !item.track || !this.showTracks ? (item.name ? ' ' : '') + (this.nodeCounts == 1 ? '(' + this.trackCount(item.item) + ')' : this.nodeCounts == 2 ? '(' + this.branchCount(item, !item.root ? false : true, true, false, tr + (tr > 2 ? this.tree[this.tree[pr].par].nm : '') + (tr > 1 ? this.tree[pr].nm : '') + (tr > 0 ? this.tree[par].nm : '') + item.nm, type) + ')' : '') : '';
-		if (!this.showTracks && item.count == (item.name ? ' ' : '') + '(0)') item.count = '';
+	getItemCount(v) {
+		let prop = !panel.imgView ? 'statistics' : '_statistics';
+		if (this.statisticsShow && v[prop] == null) v[prop] = v.root && this.label && !panel.imgView ? this.label : this.calcStatistics(v);
+		if (v.count === '' && this.nodeCounts) {
+			if (!panel.imgView) {
+				if (v.root && this.label) {
+					if (!this.statisticsShow) v.count = this.label;
+				} else {
+					const type = panel.search.txt ? 'search' : ppt.filterBy ? 'filter' : 'standard';
+					const key = this.getKey(v);
+					v.count = !v.track || !this.showTracks ? (v.name ? ' ' : '') + (this.nodeCounts == 1 ? '(' + this.trackCount(v.item) + ')' : this.nodeCounts == 2 ? '(' + this.branchCount(v, !v.root ? false : true, true, false, key, type) + ')' : '') : '';
+					if (!this.showTracks && v.count == (v.name ? ' ' : '') + '(0)') v.count = '';
+					if (this.countsRight && !this.statisticsShow) v.count = v.count.replace(/[()]/g, '');
+				}
+			} else {
+				const getTracks = [true, true, true, true, false, false, true, false, false, false, false][ppt.itemShowStatistics];
+				if (getTracks) {
+					v.count = this.trackCount(v.item);
+					v.count += v.count > 1 ? ' tracks' : ' track';
+				}
+				const getItemCount = !v.root && ppt.itemOverlayType != 1 && ppt.albumArtLabelType == 2 && !ppt.itemShowStatistics && (pop.nodeCounts == 1 || pop.nodeCounts == 2);;
+				if (getItemCount) {
+					const count = v.count.replace(/\D/g, '');
+					if (panel.lines == 1 || ppt.albumArtFlipLabels) v.grp += ` (${count})`;
+					else v.lot += ` (${count})`;
+				}
+			}
+		}
 	}
 
 	getHandleList(n) {
@@ -1164,12 +1380,32 @@ class Populate {
 		else return -1;
 	}
 
+	getKey(v) {
+		const level = v.level;
+		const o = {
+			a: v.nm || '',
+			b: level != 0 ? this.tree[v.par].nm : '',
+			c: level > 1 ? this.tree[this.tree[v.par].par].nm : '',
+			d: level > 2 ? this.tree[this.tree[this.tree[v.par].par].par].nm : ''
+		}
+		return level + (level > 2 ? o.d : '') + (level > 1 ? o.c : '') + (level > 0 ? o.b : '') + o.a;
+	}
+
 	getNowplaying(handle, stop) {
-		if (stop) return this.nowp = -1;
+		if (stop) {
+			panel.treePaint();
+			return this.nowp = -1;
+		}
 		if (!handle && fb.IsPlaying) handle = fb.GetNowPlaying();
 		if (!handle) return this.nowp = -1;
 		this.nowp = panel.list.Find(handle);
 		panel.treePaint();
+	}
+
+	getNumbers(arr) { // test [0, '0', "0", "0.5", 10, '10', "", '', '-', null, true, false, 'Oh']
+		return arr.filter(v => Number(v)); // gives ["0.5", 10, "10", true]
+		//return arr.filter(v => parseFloat(v) == v); // gives [0, "0", "0", "0.5", 10, "10"]
+		//return arr.filter(v => Number(v) && parseFloat(v) == v); // gives ["0.5", 10, "10"]
 	}
 
 	getRowNumber(y) {
@@ -1208,6 +1444,10 @@ class Populate {
 
 	lbtn_dblclk(x, y) {
 		if (this.autoPlay.click > 2 && ppt.libSource) return;
+		if (vk.k('alt')) {
+			this.mbtnDblClickOrAltDblClick(x, y, '', 'alt');
+			return;
+		}
 		this.dbl_clicked = true;
 		if (y < panel.search.h) return;
 		let ix = this.get_ix(x, y, true, false);
@@ -1219,24 +1459,36 @@ class Populate {
 				break;
 			case 'text':
 				if (!this.check_ix(item, x, y, false)) return;
+				if (this.dblClickAction == 3) {
+					let handleList = new FbMetadbHandleList();
+					this.range(item.item).forEach(v => {
+						if (v < panel.list.Count) handleList.Add(panel.list[v]);
+					});
+					if (handleList.Count) plman.FlushPlaybackQueue();
+					for (let i = 0; i < handleList.Count; i++) {
+						plman.AddItemToPlaybackQueue(handleList[i]);
+					}
+					fb.Play();
+					return;
+				}
 				if (!ppt.libSource) {
 					plman.ExecutePlaylistDefaultAction($.pl_active, this.range(item.item)[0]);
 					return;
 				}
-				if (!ppt.dblClickAction && !this.autoFill.mouse && !this.autoPlay.click) return this.send(item, x, y);
-				if (ppt.dblClickAction == 2 && !item.track && !panel.imgView) {
+				if (!this.dblClickAction && !this.autoFill.mouse && !this.autoPlay.click) return this.send(item, x, y);
+				if (this.dblClickAction == 2 && !item.track && !panel.imgView) {
 					this.expandCollapse(x, y, item, ix);
 					lib.treeState(false, ppt.rememberTree);
 				}
-				if (!ppt.dblClickAction || this.autoPlay.click == 2) return;
-				if (ppt.dblClickAction != 2 || ppt.dblClickAction == 2 && item.track || ppt.dblClickAction == 2 && panel.imgView) {
+				if (!this.dblClickAction || this.autoPlay.click == 2) return;
+				if (this.dblClickAction != 2 || this.dblClickAction == 2 && item.track || this.dblClickAction == 2 && panel.imgView) {
 					if (!this.autoFill.mouse) this.send(item, x, y);
-					let pln = plman.FindOrCreatePlaylist(ppt.libPlaylist.replace(/%view_name%/i, panel.viewName), false);
-					if (ppt.sendToCur) pln = plman.ActivePlaylist;
-					else plman.ActivePlaylist = pln;
-					plman.ActivePlaylist = pln;
-					const c = (plman.PlaybackOrder == 3 || plman.PlaybackOrder == 4) ? Math.ceil(plman.PlaylistItemCount(pln) * Math.random() - 1) : 0;
-					plman.ExecutePlaylistDefaultAction(pln, c);
+					let pl_stnd_idx = plman.FindOrCreatePlaylist(ppt.libPlaylist.replace(/%view_name%/i, panel.viewName), false);
+					if (ppt.sendToCur) pl_stnd_idx = plman.ActivePlaylist;
+					else plman.ActivePlaylist = pl_stnd_idx;
+					plman.ActivePlaylist = pl_stnd_idx;
+					const c = (plman.PlaybackOrder == 3 || plman.PlaybackOrder == 4) ? Math.ceil(plman.PlaylistItemCount(pl_stnd_idx) * Math.random() - 1) : 0;
+					plman.ExecutePlaylistDefaultAction(pl_stnd_idx, c);
 				}
 				break;
 		}
@@ -1266,7 +1518,13 @@ class Populate {
 				this.lbtnDn = true;
 				panel.pos = ix;
 				if (ppt.touchControl) break;
-				if (vk.k('alt') && this.autoFill.mouse) return;
+				if (vk.k('alt')) {
+					this.alt_dbl_clicked = false;
+					if (ppt.altClickAction == 2) {
+						return;
+					}
+					if (this.autoFill.mouse) return;
+				}
 				if (!item.sel && !vk.k('ctrl')) this.setTreeSel(ix, item.sel);
 				break;
 		}
@@ -1274,7 +1532,7 @@ class Populate {
 	}
 
 	lbtn_up(x, y) {
-		if (lib.empty && ppt.libSource == 1 && !ppt.fixedPlaylist) fb.RunMainMenuCommand('Library/Configure');
+		if (lib.empty && ppt.libSource == 1 && !ppt.fixedPlaylist && y > panel.search.h) fb.RunMainMenuCommand('Library/Configure');
 		this.last_pressed_coord = {
 			x: undefined,
 			y: undefined
@@ -1288,7 +1546,10 @@ class Populate {
 		const item = this.tree[ix];
 		if (this.clicked_on != 'text') return;
 		if (!ppt.libSource) return this.setPlaylistSelection(ix, item);
-		if (vk.k('alt')) return this.add(x, y, !ppt.altAddToCur);
+		if (vk.k('alt')) {
+			this.mbtnUpOrAltClickUp(x, y, '', 'alt');// {
+			return;
+		}
 		if (!vk.k('ctrl')) {
 			this.clearSelected();
 			if (!item.sel) this.setTreeSel(ix, item.sel);
@@ -1330,10 +1591,14 @@ class Populate {
 	load(list, isArray, add, autoPlay, def_pl, insert) {
 		let np_item = -1;
 		let pid = -1;
-		let pln = plman.FindOrCreatePlaylist(ppt.libPlaylist.replace(/%view_name%/i, panel.viewName), false);
-		if (!def_pl) pln = plman.ActivePlaylist;
-		else if (ppt.activateOnChange) plman.ActivePlaylist = pln;
-		if (autoPlay == 4 && plman.PlaylistItemCount(pln) || autoPlay == 3 && fb.IsPlaying) {
+		const pl_stnd = ppt.libPlaylist.replace(/%view_name%/i, panel.viewName);
+		let pl_stnd_idx = plman.FindOrCreatePlaylist(pl_stnd, true);
+
+		if (!def_pl && plman.ActivePlaylist != -1) pl_stnd_idx = plman.ActivePlaylist;
+		else if (ppt.activateOnChange) plman.ActivePlaylist = pl_stnd_idx;
+		
+		
+		if (autoPlay == 4 && plman.PlaylistItemCount(pl_stnd_idx) || autoPlay == 3 && fb.IsPlaying) {
 			autoPlay = false;
 			add = true;
 		}
@@ -1342,69 +1607,146 @@ class Populate {
 		this.sortIfNeeded(items);
 		this.selList = items.Clone();
 		this.selection_holder.SetSelection(this.selList);
-		const plnIsValid = pln != -1 && pln < plman.PlaylistCount;
-		const pllockRemoveOrAdd = plnIsValid ? plman.GetPlaylistLockedActions(pln).includes('RemoveItems') || plman.GetPlaylistLockedActions(pln).includes('ReplaceItems') || plman.GetPlaylistLockedActions(pln).includes('AddItems') : false;
+		const plnIsValid = pl_stnd_idx != -1 && pl_stnd_idx < plman.PlaylistCount;
+		const pllockRemoveOrAdd = plnIsValid ? plman.GetPlaylistLockedActions(pl_stnd_idx).includes('RemoveItems') || plman.GetPlaylistLockedActions(pl_stnd_idx).includes('ReplaceItems') || plman.GetPlaylistLockedActions(pl_stnd_idx).includes('AddItems') : false;
 		if (!add && pllockRemoveOrAdd) return;
-		if (fb.IsPlaying && !add && fb.GetNowPlaying()) {
-			np_item = items.Find(fb.GetNowPlaying());
-			let pl_chk = true;
-			let np;
-			if (np_item != -1) {
-				np = plman.GetPlayingItemLocation();
-				if (np.IsValid) {
-					if (np.PlaylistIndex != pln) pl_chk = false;
-					else pid = np.PlaylistItemIndex;
+		if (fb.IsPlaying && !add) {
+			if (ppt.actionMode == 1) {
+				const pl_playing = `${ppt.libPlaylist} (playing)`;
+				const pl_playing_idx = plman.FindOrCreatePlaylist(pl_playing, false);
+				if (plman.PlayingPlaylist == pl_stnd_idx) {
+					plman.RenamePlaylist(pl_stnd_idx, pl_playing);
+					plman.RenamePlaylist(pl_playing_idx, pl_stnd);
+					plman.SetPlaylistSelection(pl_playing_idx, $.range(0, plman.PlaylistItemCount(pl_playing_idx) - 1), true);
+					plman.RemovePlaylistSelection(pl_playing_idx, false);
+					plman.InsertPlaylistItems(pl_playing_idx, 0, items, false);
+					plman.MovePlaylist(pl_playing_idx, pl_stnd_idx);
+					plman.MovePlaylist(pl_stnd_idx + 1, pl_playing_idx);
+				} else {
+					plman.SetPlaylistSelection(pl_stnd_idx, $.range(0, plman.PlaylistItemCount(pl_stnd_idx) - 1), true);
+					plman.RemovePlaylistSelection(pl_stnd_idx, false);
+					plman.InsertPlaylistItems(pl_stnd_idx, 0, items, false);
 				}
-				if (pl_chk && pid == -1 && items.Count < 5000) {
-					if (ui.dui) plman.SetActivePlaylistContext();
-					const start = Date.now();
-					for (let i = 0; i < 20; i++) {
-						if (Date.now() - start > 300) break;
-						fb.RunMainMenuCommand('Edit/Undo');
-						np = plman.GetPlayingItemLocation();
-						if (np.IsValid) {
-							pid = np.PlaylistItemIndex;
-							if (pid != -1) break;
+				plman.ActivePlaylist = pl_stnd_idx;
+			} else if (fb.GetNowPlaying()) {
+				np_item = items.Find(fb.GetNowPlaying());
+				let pl_chk = true;
+				let np;
+				if (np_item != -1) {
+					np = plman.GetPlayingItemLocation();
+					if (np.IsValid) {
+						if (np.PlaylistIndex != pl_stnd_idx) pl_chk = false;
+						else pid = np.PlaylistItemIndex;
+					}
+					if (pl_chk && pid == -1 && items.Count < 5000) {
+						if (ui.dui) plman.SetActivePlaylistContext();
+						const start = Date.now();
+						for (let i = 0; i < 20; i++) {
+							if (Date.now() - start > 300) break;
+							fb.RunMainMenuCommand('Edit/Undo');
+							np = plman.GetPlayingItemLocation();
+							if (np.IsValid) {
+								pid = np.PlaylistItemIndex;
+								if (pid != -1) break;
+							}
 						}
 					}
 				}
-			}
-			if (pid != -1) {
-				plman.ClearPlaylistSelection(pln);
-				plman.SetPlaylistSelectionSingle(pln, pid, true);
-				plman.RemovePlaylistSelection(pln, true);
-				const it = items.Clone();
-				items.RemoveRange(np_item, items.Count);
-				it.RemoveRange(0, np_item + 1);
-				if (plman.PlaylistItemCount(pln) < 5000) plman.UndoBackup(pln);
-				plman.InsertPlaylistItems(pln, 0, items);
-				plman.InsertPlaylistItems(pln, plman.PlaylistItemCount(pln), it);
-			} else {
-				if (plman.PlaylistItemCount(pln) < 5000) plman.UndoBackup(pln);
-				plman.ClearPlaylist(pln);
-				plman.InsertPlaylistItems(pln, 0, items);
+				if (pid != -1) {
+					plman.ClearPlaylistSelection(pl_stnd_idx);
+					plman.SetPlaylistSelectionSingle(pl_stnd_idx, pid, true);
+					plman.RemovePlaylistSelection(pl_stnd_idx, true);
+					const it = items.Clone();
+					items.RemoveRange(np_item, items.Count);
+					it.RemoveRange(0, np_item + 1);
+					if (plman.PlaylistItemCount(pl_stnd_idx) < 5000) plman.UndoBackup(pl_stnd_idx);
+					plman.InsertPlaylistItems(pl_stnd_idx, 0, items);
+					plman.InsertPlaylistItems(pl_stnd_idx, plman.PlaylistItemCount(pl_stnd_idx), it);
+				} else {
+					if (plman.PlaylistItemCount(pl_stnd_idx) < 5000) plman.UndoBackup(pl_stnd_idx);
+					plman.ClearPlaylist(pl_stnd_idx);
+					plman.InsertPlaylistItems(pl_stnd_idx, 0, items);
+				}
 			}
 		} else if (!add) {
-			if (plman.PlaylistItemCount(pln) < 5000) plman.UndoBackup(pln);
-			plman.ClearPlaylist(pln);
-			plman.InsertPlaylistItems(pln, 0, items);
-			plman.SetPlaylistFocusItem(pln, 0);
+			if (plman.PlaylistItemCount(pl_stnd_idx) < 5000) plman.UndoBackup(pl_stnd_idx);
+			plman.ClearPlaylist(pl_stnd_idx);
+			plman.InsertPlaylistItems(pl_stnd_idx, 0, items);
+			plman.SetPlaylistFocusItem(pl_stnd_idx, 0);
 		} else {
-			if (plman.PlaylistItemCount(pln) < 5000) plman.UndoBackup(pln);
-			plman.InsertPlaylistItems(pln, !insert ? plman.PlaylistItemCount(pln) : plman.GetPlaylistFocusItemIndex(pln), items, true);
-			const f_ix = !insert || plman.GetPlaylistFocusItemIndex(pln) == -1 ? plman.PlaylistItemCount(pln) - items.Count : plman.GetPlaylistFocusItemIndex(pln) - items.Count;
-			plman.SetPlaylistFocusItem(pln, f_ix);
-			plman.EnsurePlaylistItemVisible(pln, f_ix);
+			if (plman.PlaylistItemCount(pl_stnd_idx) < 5000) plman.UndoBackup(pl_stnd_idx);
+			plman.InsertPlaylistItems(pl_stnd_idx, !insert ? plman.PlaylistItemCount(pl_stnd_idx) : plman.GetPlaylistFocusItemIndex(pl_stnd_idx), items, true);
+			const f_ix = !insert || plman.GetPlaylistFocusItemIndex(pl_stnd_idx) == -1 ? plman.PlaylistItemCount(pl_stnd_idx) - items.Count : plman.GetPlaylistFocusItemIndex(pl_stnd_idx) - items.Count;
+			plman.SetPlaylistFocusItem(pl_stnd_idx, f_ix);
+			plman.EnsurePlaylistItemVisible(pl_stnd_idx, f_ix);
 		}
 		if (autoPlay) {
-			const c = (plman.PlaybackOrder == 3 || plman.PlaybackOrder == 4) ? Math.ceil(plman.PlaylistItemCount(pln) * Math.random() - 1) : 0;
-			plman.ExecutePlaylistDefaultAction(pln, c);
+			const c = (plman.PlaybackOrder == 3 || plman.PlaybackOrder == 4) ? Math.ceil(plman.PlaylistItemCount(pl_stnd_idx) * Math.random() - 1) : 0;
+			plman.ExecutePlaylistDefaultAction(pl_stnd_idx, c);
 		}
 	}
 
-	mbtn_up(x, y) {
-		if (!ppt.libSource) return;
-		this.add(x, y, !ppt.mbtnAddToCur);
+	mbtn_dn() { 
+		this.mbtn_dbl_clicked = false
+	}
+
+	mbtnDblClickOrAltDblClick(x, y, mask, type) {
+		this[`${type}_dbl_clicked`] = true;
+		if (type == 'mbtn' && (ppt.actionMode == 2 || ppt.mbtnClickAction == 2) || type == 'alt' && ppt.altClickAction == 2) {
+			const ix = this.get_ix(x, y, true, false);
+			if (ix < this.tree.length && ix >= 0) {
+				let handleList = new FbMetadbHandleList();
+				this.range(this.tree[ix].item).forEach(v => {
+					if (v < panel.list.Count) handleList.Add(panel.list[v]);
+				});
+				const queueHandles = plman.GetPlaybackQueueHandles();
+				let remove = [];
+				for (let i = 0; i < handleList.Count; i++) {
+					for (let k = 0; k < queueHandles.Count; k++) {
+						if (handleList[i].Compare(queueHandles[k])) {
+							remove.push(k);
+						}
+					}
+				}
+				remove = [...new Set(remove)]
+				plman.RemoveItemsFromPlaybackQueue(remove);
+			}
+		}
+	}
+
+	mbtnUpOrAltClickUp(x, y, mask, type) {
+		if (this[`${type}_dbl_clicked`]) return;
+		if (type == 'mbtn' && (ppt.actionMode == 2 || ppt.mbtnClickAction == 2) || type == 'alt' && ppt.altClickAction == 2) {
+			setTimeout(() => { // timeout: wait & see if double click, but adds a little lag to single click: timeout can be commented out
+				if (this[`${type}_dbl_clicked`]) return;
+				const ix = this.get_ix(x, y, true, false);
+				if (ix < this.tree.length && ix >= 0) {
+					let handleList = new FbMetadbHandleList();
+					this.range(this.tree[ix].item).forEach(v => {
+						if (v < panel.list.Count) handleList.Add(panel.list[v]);
+					});
+					let add = new FbMetadbHandleList();
+					handleList.Convert().forEach(h => {
+						let found = false;
+						plman.GetPlaybackQueueHandles().Convert().forEach(q => {
+							if (h.Compare(q)) found = true;
+						});
+						if (!found) add.Add(h);
+					});
+					const ap = plman.ActivePlaylist;
+					const plItems = plman.GetPlaylistItems(ap);
+					add.Convert().forEach(v => {
+						const ix = plItems.Find(v);
+						if (ix != -1) {
+							plman.AddPlaylistItemToPlaybackQueue(ap, ix);
+						} else plman.AddItemToPlaybackQueue(v);
+					});
+				}
+			}, 180);
+		} else {
+			if (!ppt.libSource) return;
+			this.add(x, y, !ppt[`${type}ClickAction`]);
+		}
 	}
 
 	merge(m, mergeBrCount) {
@@ -1429,6 +1771,8 @@ class Populate {
 		if (ix != -1) {
 			this.m.i = ix;
 			this.check_tooltip(ix, x, y);
+		} else if (this.countsRight || this.statisticsShow) {
+			this.check_tooltip(this.row.i, x, y);
 		} else this.deactivateTooltip();
 		if (!ppt.mousePointerOnly) {
 			if (this.highlight.node || panel.imgView) {
@@ -1442,6 +1786,12 @@ class Populate {
 		this.cur_ix = this.m.i;
 		this.m.cur_br = this.m.br;
 		this.row.cur = this.row.i;
+	}
+
+	notifySelection(list) {
+		if (list === undefined) list = this.getHandleList('newItems');
+		window.NotifyOthers(window.Name, list);
+		if (list.Count) return true;
 	}
 
 	nowPlayingShow() {
@@ -1503,12 +1853,10 @@ class Populate {
 	}
 
 	setPlaylist(ix, item) {
-		if (this.autoFill.key) {
-			if (ppt.libSource) {
-				this.load(this.sel_items, true, false, false, !ppt.sendToCur, false);
-				this.track(true);
-			} else this.setPlaylistSelection(ix, item);
-		}
+		if (ppt.libSource) {
+			if (this.autoFill.key) this.load(this.sel_items, true, false, false, !ppt.sendToCur, false);
+			this.track(true);
+		} else if (this.autoFill.key) this.setPlaylistSelection(ix, item);
 	}
 
 	on_key_down(vkey) {
@@ -1552,7 +1900,7 @@ class Populate {
 					break;
 				}
 				// !imgView
-				if ((this.tree[panel.pos].tr == (this.rootNode ? 1 : 0)) && this.tree[panel.pos].child.length < 1) {
+				if ((this.tree[panel.pos].level == (this.rootNode ? 1 : 0)) && this.tree[panel.pos].child.length < 1) {
 					item = this.tree[panel.pos];
 					this.m.i = panel.pos = item.ix;
 					this.leftKeyCheckScroll();
@@ -1737,9 +2085,10 @@ class Populate {
 			send: ppt.autoPlay
 		}
 		this.autoFill = {
-			mouse: ppt.clickAction == 1 ? true : false,
+			mouse: ppt.actionMode == 2 ? false : ppt.clickAction == 1 || ppt.actionMode == 1 ? true : false,
 			key: ppt.keyAction
 		}
+		this.dblClickAction = ppt.actionMode == 1 ? 1 : ppt.actionMode == 2 ? 3 : ppt.dblClickAction;
 	}
 
 	setPlaylistSelection(ix, item) {
@@ -1804,11 +2153,13 @@ class Populate {
 
 	setValues() {
 		this.countsRight = ppt.countsRight;
-		this.durationShow = ppt.itemShowDuration;
 		this.fullLineSelection = ppt.fullLineSelection;
 		this.highlight = {
 			node: ppt.highLightNode,
 			nowPlaying: ppt.highLightNowplaying,
+			nowPlayingIndicator: ppt.nowPlayingIndicator,
+			nowPlayingSidemarker: ppt.nowPlayingSidemarker,
+			nowPlayingShow: ppt.highLightNowplaying || ppt.nowPlayingIndicator || ppt.nowPlayingSidemarker,
 			row: ppt.highLightRow,
 			text: ppt.highLightText
 		};
@@ -1818,8 +2169,13 @@ class Populate {
 		this.rootNode = ppt.rootNode;
 		this.rowStripes = ppt.rowStripes;
 		this.sbarShow = ppt.sbarShow;
-		this.showTracks = !ppt.treeListView ? ppt.showTracks : false;
+		this.showTracks = !ppt.facetView ? ppt.showTracks : false;
+		this.statistics = ['', 'Bitrate', 'Duration', 'Total size', 'Rating', 'Popularity', 'Date', 'Queue', 'Playcount', 'First played', 'Last played', 'Added'];
+		this.statisticsShow = ppt.itemShowStatistics;
+		this.label = !ppt.labelStatistics ? '' : this.statisticsShow ? this.statistics[this.statisticsShow] : '';
+		this.tooltipStatistics = ppt.tooltipStatistics;
 		this.treeIndent = ppt.treeIndent;
+		this.imgGetItemCount = ppt.itemOverlayType != 1 && ppt.albumArtLabelType == 2 && !this.statisticsShow && (this.nodeCounts == 1 || this.nodeCounts == 2);
 	}
 
 	showItem(i, type) {
@@ -1864,7 +2220,7 @@ class Populate {
 	}
 
 	sortIfNeeded(items) {
-		if (panel.multiProcess && !ppt.customSort.length) items.OrderByFormat(panel.multiValueTagSort, 1);
+		if (panel.multiProcess && !ppt.customSort.length) items.OrderByFormat(panel.playlistSort, 1);
 		else if (ppt.customSort.length) items.OrderByFormat(this.customSort, 1);
 	}
 
@@ -1907,7 +2263,7 @@ class Populate {
 
 	track(plLoaded) {
 		const list = this.getHandleList();
-		if (ppt.libSource != 2) window.NotifyOthers('lt_panelHandleList', list); // if receiving can't send back same
+		this.notifySelection(list);
 		if (!plLoaded) this.selection_holder.SetSelection(list);
 	}
 

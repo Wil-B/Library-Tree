@@ -1,12 +1,19 @@
 # Library Tree
 
-Feature rich library viewer for [foobar2000](https://www.foobar2000.org), now extended to include album art.
+Feature rich library viewer and browser for [foobar2000](https://www.foobar2000.org).
  
  ### FEATURES
-- Tree viewer + album art support
-- Library and playlist sources
-- Single panel and two panel modes
+- Tree viewer
+- Album art browser
+- New facets
+- Statistics
 - Album art flow mode
+- Library and playlist sources
+- Single panel and multiple panel modes
+- Mode presets
+     - browser: keep playing playlist
+     - player: play without a playlist
+     - default: choice of all actions
 
 ### REQUIREMENTS:
 - [foobar2000](https://www.foobar2000.org)

@@ -357,15 +357,14 @@ class Buttons {
 			normal: this.cross.normal,
 			hover: this.cross.hover
 		}, true, '', () => search.clear(), () => panel.search.txt ? 'Clear search text (escape). Double click to show history' : 'No search text to clear', true, 'cross2');
-
 		this.btns.filter = new Btn(ppt.searchShow ? panel.filter.x + this.margin / 2 : panel.filter.x - this.margin / 2, 0, ppt.searchShow ? panel.filter.w - this.margin : panel.filter.w + this.margin, panel.search.sp, 6, panel.filter.x, ppt.searchShow ? panel.cc : panel.lc, panel.filter.w, {
-			normal: !ui.id.local ? ui.col.txt_box : ui.col.txt_box,
-			hover: !ui.id.local ? ui.col.txt_box_h : ui.col.txt_box
+			normal: ui.col.txt_box,
+			hover: !ui.id.local ? (!ui.img.blurDark ? ui.col.txt_box_h : ui.col.text) : ui.col.txt_box
 		}, !ppt.filterShow, '', () => fMenu.load(panel.filter.x, panel.search.h), () => 'Filter', true, 'filter');
 
 		this.btns.settings = new Btn(this.s.x, panel.settings.offset, this.s.w1, panel.search.sp, 7, this.s.w2, panel.search.sp, panel.settings.y, {
-			normal: !ui.id.local ? ui.col.txt_box : ui.col.txt_box,
-			hover: !ui.id.local ? ui.col.txt_box_h : ui.col.txt_box
+			normal: ui.col.txt_box,
+			hover: !ui.id.local ? (!ui.img.blurDark ? ui.col.txt_box_h : ui.col.text) : ui.col.txt_box
 		}, !ppt.settingsShow, '', () => men.rbtn_up(this.s.x, panel.search.h, true), () => 'Settings', true, 'settings');
 
 		this.btns.cross1 = new Btn(this.b.x - this.margin / 2, this.hoverArea, this.q.h + this.margin, this.hot_h, 5, this.b.x, this.b.y, this.b.h, {
@@ -456,12 +455,16 @@ class Btn {
 	}
 
 	drawFilter(gr) {
-		const colText = !ui.id.local ? (this.state !== 'down' ? ui.getBlend(this.item.hover, this.item.normal, this.transition_factor) : this.item.hover) : this.item.normal;
+		const colText = !ui.id.local ? (this.state !== 'down' ? ui.getBlend(this.item.hover, this.item.normal, this.transition_factor, true) : this.item.hover) : this.item.normal;
 		const colRect = this.state !== 'down' ? ui.getBlend(ui.col.bg4, ui.col.bg5, this.transition_factor, true) : ui.col.bg4;
 		gr.SetSmoothingMode(2);
 		gr.FillRoundRect(this.x, but.hoverArea, this.w, but.hot_h, but.arc, but.arc, colRect);
 		gr.SetSmoothingMode(0);
-		gr.GdiDrawText(panel.filter.mode[ppt.filterBy].name, panel.filter.font, colText, this.p1, this.y, this.p3, this.h, this.p2);
+		if (!ui.img.blurDark) gr.GdiDrawText(panel.filter.mode[ppt.filterBy].name, panel.filter.font, colText, this.p1, this.y, this.p3, this.h, this.p2);
+		else {
+			gr.SetTextRenderingHint(5);
+			gr.DrawString(panel.filter.mode[ppt.filterBy].name, panel.filter.font, colText, this.p1 - 1, this.y - 1, this.p3, this.h, StringFormat(1, 1));
+		}
 	}
 
 	drawScrollBtn(gr) {
@@ -492,12 +495,16 @@ class Btn {
 	}
 
 	drawSettings(gr) {
-		const colText = !ui.id.local ? (this.state !== 'down' ? ui.getBlend(this.item.hover, this.item.normal, this.transition_factor) : this.item.hover) : this.item.normal;
+		const colText = !ui.id.local ? (this.state !== 'down' ? ui.getBlend(this.item.hover, this.item.normal, this.transition_factor, true) : this.item.hover) : this.item.normal;
 		const colRect = this.state !== 'down' ? ui.getBlend(ui.col.bg4, ui.col.bg5, this.transition_factor, true) : ui.col.bg4;
 		gr.SetSmoothingMode(2);
 		gr.FillRoundRect(this.x, but.hoverArea, this.w, but.hot_h, but.arc, but.arc, colRect);
 		gr.SetSmoothingMode(0);
-		gr.GdiDrawText(panel.settings.icon, panel.settings.font, colText, 0, this.y, this.p1, this.p2, panel.rc);
+		if (!ui.img.blurDark) gr.GdiDrawText(panel.settings.icon, panel.settings.font, colText, 0, this.y, this.p1, this.p2, panel.rc);
+		else {
+			gr.SetTextRenderingHint(5);
+			gr.DrawString(panel.settings.icon, panel.settings.font, colText, 0, this.y - 1, this.p1, this.p2, StringFormat(2, 1));		
+		}
 	}
 
 	lbtn_dn(x, y) {

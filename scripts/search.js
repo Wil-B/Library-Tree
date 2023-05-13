@@ -34,7 +34,6 @@ class Search {
 			this.menu.sort((a, b) => pop.collator.compare(a.search, b.search));
 			ppt.searchHistory = JSON.stringify(this.menu);
 		}, 3000);
-		
 	}
 
 	// Methods
@@ -46,14 +45,14 @@ class Search {
 	clear() {
 		if (!panel.search.txt) return;
 		lib.time.Reset();
-		pop.subCounts.search = {};
+		pop.cache.search = {};
 		this.offset = this.start = this.end = this.cx = 0;
 		panel.search.txt = '';
 		but.setSearchBtnsHide();
 		panel.searchPaint();
-		lib.treeState(false, ppt.rememberTree);
-		lib.rootNodes();
+		lib.setNodes(); // comment out to always stop child panels clearing [if memory on & item selected that's used & so won't clear]
 		pop.checkAutoHeight();
+		pop.notifySelection();
 	}
 
 	draw(gr) {
@@ -67,7 +66,13 @@ class Search {
 			this.drawSel(gr);
 			this.getOffset(gr);
 			gr.GdiDrawText(panel.search.txt.substr(this.offset), ui.font.main, ui.col.search, panel.search.x, 0, panel.search.w, panel.search.sp, panel.l);
-		} else gr.GdiDrawText('Search', ui.font.search, ui.col.txt_box, panel.search.x, 0, panel.search.w, panel.search.sp, panel.l);
+		} else {
+			if (!ui.img.blurDark) gr.GdiDrawText('Search', ui.font.search, ui.col.txt_box, panel.search.x, 0, panel.search.w, panel.search.sp, panel.l);
+			else {
+				gr.SetTextRenderingHint(5);
+				gr.DrawString('Search', ui.font.search, ui.col.txt_box, panel.search.x, -1, panel.search.w, panel.search.sp, panel.s_lc);
+			}
+		}
 		this.drawCursor(gr);
 	}
 
@@ -108,7 +113,7 @@ class Search {
 	getOffset(gr) {
 		let j = 0;
 		let tx = gr.CalcTextWidth(panel.search.txt.substr(this.offset, this.cx - this.offset), ui.font.main, true);
-		while (tx >= panel.search.w && j < 500) {
+		while (tx >= panel.search.w && panel.search.w > 0 && j < 500) {
 			j++;
 			this.offset++;
 			tx = gr.CalcTextWidth(panel.search.txt.substr(this.offset, this.cx - this.offset), ui.font.main, true);
@@ -189,10 +194,11 @@ class Search {
 				if (ppt.searchEnter || ppt.searchSend == 1) {
 					lib.upd_search = true;
 					lib.time.Reset();
-					pop.subCounts.search = {};
-					lib.treeState(false, ppt.rememberTree);
-					lib.rootNodes();
+					pop.cache.search = {};
+					lib.setNodes();
 					panel.setHeight(true);
+					if (panel.search.txt.length > 2) window.NotifyOthers(window.Name, !lib.list.Count ? lib.list : panel.list);
+					else if (!panel.search.txt.length) pop.notifySelection();
 					lib.search.cancel();
 					this.logHistory();
 					searchDone = true;
@@ -255,6 +261,28 @@ class Search {
 				this.start = this.cx;
 				this.end = this.start;
 				break;
+			case vk.ctrlBackspace:
+				this.record();
+				if (this.start != this.end) this.cx = this.end = this.start;
+				if (this.cx > 0) {
+					const initial = panel.search.txt.length;
+					const leftSide = panel.search.txt.slice(0, this.cx).trimEnd();
+					let boundary = 0;
+					for (let k = 0; k < leftSide.length; k++) {
+						if (panel.search.txt[k] == ' ' && panel.search.txt[k + 1] != ' ') boundary = k + 1;
+					}
+					panel.search.txt = leftSide.slice(0, boundary) + panel.search.txt.slice(this.cx).trimStart()
+					this.cx = boundary;
+					
+					if (this.offset > 0) {
+						this.offset -= initial - panel.search.txt.length;
+					}
+				}
+				this.calcText();
+				this.offset = this.offset >= this.end - this.start ? this.offset - this.end + this.start : 0;
+				this.start = this.cx;
+				this.end = this.start;
+				break;
 			case 'delete':
 				this.record();
 				if (this.start == this.end) {
@@ -298,15 +326,13 @@ class Search {
 					this.calcText();
 					this.offset = this.offset >= this.end - this.start ? this.offset - this.end + this.start : 0;
 					this.cx = this.start + text.length;
-					this.start = this.cx;
-					this.end = this.start;
+					this.end = this.start = this.cx;
 				} else {
 					panel.search.txt = panel.search.txt.substring(0, this.end) + text + panel.search.txt.substring(this.start);
 					this.calcText();
 					this.offset = this.offset < this.end - this.start ? this.offset - this.end + this.start : 0;
 					this.cx = this.end + text.length;
-					this.start = this.cx;
-					this.end = this.start;
+					this.end = this.start = this.cx;
 				}
 				break;
 		}
@@ -330,18 +356,47 @@ class Search {
 	on_key_down(vkey) {
 		if (!panel.search.active) return;
 		switch (vkey) {
+			case vk.ctrl:	
+				this.ctrl = true;
+				break;
 			case vk.left:
 			case vk.right:
 				if (vkey == vk.left) {
-					if (this.offset > 0) {
-						if (this.cx <= this.offset) {
-							this.offset--;
-							this.cx--;
-						} else this.cx--;
-					} else if (this.cx > 0) this.cx--;
-					this.start = this.end = this.cx;
+					if (!this.ctrl) {
+						if (this.offset > 0) {
+							if (this.cx <= this.offset) {
+								this.offset--;
+								this.cx--;
+							} else this.cx--;
+						} else if (this.cx > 0) this.cx--;
+					} else {
+						let boundary = 0;
+						for (let k = this.cx - 1; k > 0; k--) {
+							if (panel.search.txt[k] != ' ' && panel.search.txt[k - 1] == ' ') {
+								boundary = k;
+								break;
+							}
+						}
+						if (this.offset > 0) {
+							this.offset -= (this.cx - boundary);
+						}
+						this.cx = boundary;
+						this.offset = this.offset >= this.end - this.start ? this.offset - this.end + this.start : 0;	
+					}
 				}
-				if (vkey == vk.right && this.cx < panel.search.txt.length) this.cx++;
+				if (vkey == vk.right && this.cx < panel.search.txt.length) {
+					if (!this.ctrl) this.cx++;
+					else {
+						let boundary = panel.search.txt.length;
+						for (let k = this.cx; k < panel.search.txt.length; k++) {
+							if (panel.search.txt[k] == ' ' && panel.search.txt[k + 1] != ' ') {
+								boundary = k + 1;
+								break;
+							}
+						}
+						this.cx = boundary;
+					}
+				}
 				this.start = this.end = this.cx;
 				if (this.shift) {
 					this.start = Math.min(this.cx, this.shift_x);
@@ -366,7 +421,24 @@ class Search {
 				this.shift_x = this.cx;
 				break;
 			case vk.del:
-				this.on_char('delete');
+				if (this.ctrl && !this.shift && this.start == this.end) { // ctrl + delete: delete next word
+					this.record();
+					const initial = panel.search.txt.length;
+					const leftSide = panel.search.txt.slice(0, this.cx);
+					const rightSide = panel.search.txt.slice(this.cx, panel.search.txt.length).trimStart();
+					const idx = rightSide.search(/ \b/);
+					const boundary = idx == -1 ? rightSide.length : idx + 1;
+					let newRightSide = rightSide.slice(boundary);
+					if (newRightSide.length && !/\s$/.test(leftSide) && !/^\s/.test(newRightSide)) newRightSide = ' ' + newRightSide;
+					panel.search.txt = leftSide + newRightSide;
+					this.cx = !/\s$/.test(leftSide) ? leftSide.length + 1 : leftSide.length;
+					if (this.offset > 0) {
+						this.offset -= initial - panel.search.txt.length;
+					}
+					this.calcText();
+					this.offset = this.offset >= this.end - this.start ? this.offset - this.end + this.start : 0;
+					this.start = this.end = this.cx;
+				} else this.on_char('delete');
 				break;
 		}
 		panel.searchPaint();
@@ -374,6 +446,9 @@ class Search {
 
 	on_key_up(vkey) {
 		if (!panel.search.active) return;
+		if (vkey == vk.ctrl) {
+			this.ctrl = false;
+		}
 		if (vkey == vk.shift) {
 			this.shift = false;
 			this.shift_x = this.cx;
@@ -414,6 +489,7 @@ class Find {
 		};
 		this.jSearch = '';
 		this.jump_search = true;
+		this.initials = null;
 	}
 
 	// Methods
@@ -432,59 +508,126 @@ class Find {
 	}
 
 	on_char(code) {
-		if (utils.IsKeyPressed(0x09) || utils.IsKeyPressed(0x11) || utils.IsKeyPressed(0x1B) || utils.IsKeyPressed(0x6A) || utils.IsKeyPressed(0x6D)) return;
 		const text = String.fromCharCode(code);
-		if (!panel.search.active) {
-			let found = false;
-			let pos = -1;
-			switch (code) {
-				case vk.back:
-					this.jSearch = this.jSearch.substr(0, this.jSearch.length - 1);
-					break;
-				case vk.enter:
-					this.jSearch = '';
-					return;
-				default:
-					this.jSearch += text;
-					break;
-			}
-			pop.clearSelected();
-			if (!this.jSearch) return;
-			pop.sel_items = [];
-			this.jump_search = true;
-			panel.treePaint();
-			timer.clear(timer.jsearch1);
-			timer.jsearch1.id = setTimeout(() => {
-				pop.tree.some((v, i) => {
-					const name = v.name.replace(/@!#.*?@!#/g, '');
-					if (name != panel.rootName && name.substring(0, this.jSearch.length).toLowerCase() == this.jSearch.toLowerCase()) {
-						found = true;
-						pos = i;
-						v.sel = true;
-						pop.setPos(pos);
-						if (pop.autoFill.key) pop.getTreeSel();
-						lib.treeState(false, ppt.rememberTree);
-						return true;
+		let advance = false;
+		if (panel.pos >= 0 && panel.pos < pop.tree.length) {
+			const char = pop.tree[panel.pos].name.replace(/@!#.*?@!#/g, '').charAt(0).toLowerCase();
+			if (pop.tree[panel.pos].sel && char == text) advance = true;
+		}
+		switch (true) {
+			case advance:
+			if (utils.IsKeyPressed(0x0A) || utils.IsKeyPressed(0x08) ||  utils.IsKeyPressed(0x09) || utils.IsKeyPressed(0x11) || utils.IsKeyPressed(0x1B) || utils.IsKeyPressed(0x6A) || utils.IsKeyPressed(0x6D)) return;
+			if (!panel.search.active) {
+				let init = '';
+				let cur = 'currentArr';
+				if (!this.initials) { // reset in buildTree
+					this.initials = {}
+					pop.tree.forEach((v, i) => {
+						if (!v.root) {
+							const nm = v.name.replace(/@!#.*?@!#/g, '');
+							init = nm.charAt().toLowerCase();
+							if (cur != init && !this.initials[init]) {
+								this.initials[init] = [i];
+								cur = init;
+							} else {
+								this.initials[init].push(i);
+							}
+						}
+					});
+				}
+				
+				this.jump_search = false;
+				if (panel.pos >= 0 && panel.pos < pop.tree.length) {
+					this.matches = this.initials[text];
+					this.ix = this.matches.indexOf(panel.pos);
+					this.ix++;
+					if (this.ix >= this.matches.length) this.ix = 0;
+					panel.pos = this.matches[this.ix];
+					this.jump_search = true;
+				}
+				if (this.jump_search) {
+					pop.clearSelected();
+					pop.sel_items = [];
+					pop.tree[panel.pos].sel = true;
+					pop.setPos(panel.pos);
+					pop.getTreeSel();
+					lib.treeState(false, ppt.rememberTree);
+					panel.treePaint();
+					if (panel.imgView) pop.showItem(panel.pos, 'focus');
+					else {
+						const row = (panel.pos * ui.row.h - sbar.scroll) / ui.row.h;
+						if (sbar.rows_drawn - row < 3 || row < 0) sbar.checkScroll((panel.pos + 3) * ui.row.h - sbar.rows_drawn * ui.row.h);
 					}
-				});
-				if (!found) this.jump_search = false;
-				panel.treePaint();
-				if (found) pop.showItem(pos, 'focus');
-				timer.jsearch1.id = null;
-			}, 500);
-
-			timer.clear(timer.jsearch2);
-			timer.jsearch2.id = setTimeout(() => {
-				if (found) {
 					if (ppt.libSource) {
 						if (pop.autoFill.key) pop.load(pop.sel_items, true, false, false, !ppt.sendToCur, false);
-						pop.track(pop.autoFill.key);
-					} else if (pos >= 0 && pos < pop.tree.length) pop.setPlaylistSelection(pos, pop.tree[pos]);
+						pop.track(pop.autoFill.key); 
+					} else if (panel.pos >= 0 && panel.pos < pop.tree.length) pop.setPlaylistSelection(panel.pos, pop.tree[panel.pos]);
+				} else {
+					this.jSearch = text;
+					panel.treePaint();
+					timer.clear(timer.jsearch2);
+					timer.jsearch2.id = setTimeout(() => {
+						this.jSearch = '';
+						panel.treePaint();
+						timer.jsearch2.id = null;
+					}, 1200);
 				}
-				this.jSearch = '';
+			}
+		break;
+		case !advance:
+			if (utils.IsKeyPressed(0x09) || utils.IsKeyPressed(0x11) || utils.IsKeyPressed(0x1B) || utils.IsKeyPressed(0x6A) || utils.IsKeyPressed(0x6D)) return;
+			if (!panel.search.active) {
+				let found = false;
+				let pos = -1;
+				switch (code) {
+					case vk.back:
+						this.jSearch = this.jSearch.substr(0, this.jSearch.length - 1);
+						break;
+					case vk.enter:
+						this.jSearch = '';
+						return;
+					default:
+						this.jSearch += text;
+						break;
+				}
+				pop.clearSelected();
+				if (!this.jSearch) return;
+				pop.sel_items = [];
+				this.jump_search = true;
 				panel.treePaint();
-				timer.jsearch2.id = null;
-			}, 1200);
+				timer.clear(timer.jsearch1);
+				timer.jsearch1.id = setTimeout(() => {
+					pop.tree.some((v, i) => {
+						const name = v.name.replace(/@!#.*?@!#/g, '');
+						if (name != panel.rootName && name.substring(0, this.jSearch.length).toLowerCase() == this.jSearch.toLowerCase()) {
+							found = true;
+							pos = i;
+							v.sel = true;
+							pop.setPos(pos);
+							pop.getTreeSel();
+							lib.treeState(false, ppt.rememberTree);
+							return true;
+						}
+					});
+					if (!found) this.jump_search = false;
+					panel.treePaint();
+					if (found) pop.showItem(pos, 'focus');
+					timer.jsearch1.id = null;
+				}, 500);
+
+				timer.clear(timer.jsearch2);
+				timer.jsearch2.id = setTimeout(() => {
+					if (found) {
+						if (ppt.libSource) {
+							if (pop.autoFill.key) pop.load(pop.sel_items, true, false, false, !ppt.sendToCur, false);
+							pop.track(pop.autoFill.key);
+						} else if (pos >= 0 && pos < pop.tree.length) pop.setPlaylistSelection(pos, pop.tree[pos]);
+					}
+					this.jSearch = '';
+					panel.treePaint();
+					timer.jsearch2.id = null;
+				}, 1200);
+			}
 		}
 	}
 

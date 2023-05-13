@@ -2,27 +2,17 @@
 
 class Library {
 	constructor() {
-		let fixedPlaylistIndex = -1;
-
-		if (ppt.fixedPlaylist) {
-			fixedPlaylistIndex = plman.FindPlaylist(ppt.fixedPlaylistName);
-			if (fixedPlaylistIndex == -1) {
-				ppt.fixedPlaylist = false;
-				ppt.libSource = 0;
-			}
-		}
-
 		this.allmusic = [];
 		this.checkSelection = true;
 		this.exp = {};
 		this.expand = [];
 		this.filterQuery = '';
 		this.filterQueryID = 'N/A';
+		this.full_list = new FbMetadbHandleList();
 		this.full_list_need_sort = false;
-		this.init = false;
+		this.initialised = false;
 		this.libNode = [];
-		this.list = [plman.GetPlaylistItems($.pl_active), !ppt.fixedPlaylist ? fb.GetLibraryItems() : plman.GetPlaylistItems(fixedPlaylistIndex), plman.GetPlaylistItems(plman.FindPlaylist(ppt.panelSelectionPlaylist))][ppt.libSource];
-		this.full_list = this.list.Clone();
+		this.list = new FbMetadbHandleList();
 		this.noListUpd = false;
 		this.none = '';
 		this.node = [];
@@ -35,13 +25,14 @@ class Library {
 		this.time = FbProfiler();
 		this.upd = 0;
 		this.upd_search = false;
+		this.v2_init = fb.Version.startsWith('2') && fb.IsLibraryEnabled();
 		this.validSearch = true;
 
 		ppt.autoExpandLimit = $.clamp(ppt.autoExpandLimit, 10, 1000);
 
 		this.lib_update = $.debounce(() => {
 			this.time.Reset();
-			pop.subCounts = {
+			pop.cache = {
 				'standard': {},
 				'search': {},
 				'filter': {}
@@ -61,10 +52,11 @@ class Library {
 		this.search = $.debounce(() => {
 			this.upd_search = true;
 			this.time.Reset();
-			pop.subCounts.search = {};
-			this.treeState(false, ppt.rememberTree);
-			this.rootNodes();
+			pop.cache.search = {};
+			this.setNodes();
 			panel.setHeight(true);
+			if (panel.search.txt.length > 2) window.NotifyOthers(window.Name, !lib.list.Count ? lib.list : panel.list);
+			else if (!panel.search.txt.length) pop.notifySelection();
 			if (ppt.searchSend != 2) return;
 			if (panel.search.txt) pop.load(panel.list, false, false, false, true, false);
 			else plman.ClearPlaylist(plman.FindOrCreatePlaylist(ppt.libPlaylist.replace(/%view_name%/i, panel.viewName), false));
@@ -73,10 +65,11 @@ class Library {
 		this.search500 = $.debounce(() => {
 			this.upd_search = true;
 			this.time.Reset();
-			pop.subCounts.search = {};
-			this.treeState(false, ppt.rememberTree);
-			this.rootNodes();
+			pop.cache.search = {};
+			this.setNodes();
 			panel.setHeight(true);
+			if (panel.search.txt.length > 2) window.NotifyOthers(window.Name, !lib.list.Count ? lib.list : panel.list);
+			else if (!panel.search.txt.length) pop.notifySelection();
 			if (ppt.searchSend != 2) return;
 			pop.load(panel.list, false, false, false, true, false);
 		}, 500);
@@ -89,6 +82,8 @@ class Library {
 
 	added(handleList) {
 		let i, items;
+		this.full_list.InsertRange(this.full_list.Count, handleList);
+		this.full_list_need_sort = true;
 		switch (true) {
 			case handleList.Count < 100: {
 				let lis = ppt.filterBy && !this.filterQuery.includes('$searchtext') ? $.query(handleList, this.filterQuery) : handleList;
@@ -115,8 +110,6 @@ class Library {
 				break;
 			}
 			default:
-				this.full_list.InsertRange(this.full_list.Count, handleList);
-				this.full_list_need_sort = true;
 				if (ppt.filterBy && !this.filterQuery.includes('$searchtext')) {
 					const newFilterItems = $.query(handleList, this.filterQuery);
 					this.list.InsertRange(this.list.Count, newFilterItems);
@@ -306,8 +299,8 @@ class Library {
 	}
 
 	checkFilter() {
-		pop.subCounts.filter = {};
-		pop.subCounts.search = {};
+		pop.cache.filter = {};
+		pop.cache.search = {};
 		this.searchCache = {};
 		if (panel.filter.mode[ppt.filterBy].type.match(/\$nowplaying{(.+?)}/)) {
 			this.getFilterQuery();
@@ -317,6 +310,26 @@ class Library {
 				if (panel.search.txt) lib.upd_search = true;
 				this.getLibrary();
 				this.rootNodes(!ppt.reset ? 1 : 0, true);
+				if (!pop.notifySelection())  {
+					const list = !panel.search.txt.length || !lib.list.Count ? lib.list : panel.list;
+					window.NotifyOthers(window.Name, ppt.filterBy ? list : new FbMetadbHandleList());
+				}
+				if (ppt.searchSend == 2 && panel.search.txt.length) pop.load(panel.list, false, false, false, true, false);
+				pop.checkAutoHeight();
+			}
+		}
+		if (panel.filter.mode[ppt.filterBy].type.match(/\$selected{(.+?)}/)) {
+			this.getFilterQuery();
+			if (this.filterQuery != this.filterQueryID) {
+				if (!ppt.rememberTree && !ppt.reset) this.logTree();
+				else if (ppt.rememberTree) this.logFilter();
+				if (panel.search.txt) lib.upd_search = true;
+				this.getLibrary();
+				this.rootNodes(!ppt.reset ? 1 : 0, true);
+				if (!pop.notifySelection())  {
+					const list = !panel.search.txt.length || !lib.list.Count ? lib.list : panel.list;
+					window.NotifyOthers(window.Name, ppt.filterBy ? list : new FbMetadbHandleList());
+				}
 				if (ppt.searchSend == 2 && panel.search.txt.length) pop.load(panel.list, false, false, false, true, false);
 				pop.checkAutoHeight();
 			}
@@ -338,12 +351,30 @@ class Library {
 		if (avg < (!arrExpanded ? 3 : 2)) panel.lines = 1;
 	}
 
+	checkStatistics(handleList) {
+		pop.tree.forEach(v => {
+			delete v.statistics;
+			delete v._statistics;
+		});
+		panel.sort(this.full_list);
+		handleList.Convert().forEach(h => {
+			const i = this.full_list.Find(h);
+			if (i != -1) {
+				['standard', 'search','filter'].forEach(w => {
+					let keys = Object.keys(pop.cache[w]);
+					let j = keys.length
+					while (j--) if (pop.cache[w][keys[j]] && pop.cache[w][keys[j]].items.includes(i)) delete pop.cache[w][keys[j]];
+				});
+			}
+		});
+		panel.treePaint();
+	}
+
 	checkTree() {
-		if (!this.upd && !(this.init && ppt.rememberTree)) return;
-		this.init = false;
+		if (!this.upd) return;
 		this.lib_update.cancel();
 		this.time.Reset();
-		pop.subCounts = {
+		pop.cache = {
 			'standard': {},
 			'search': {},
 			'filter': {}
@@ -351,8 +382,8 @@ class Library {
 		this.searchCache = {};
 		this.upd_search = !panel.search.txt ? false : true;
 		this.rootNodes(this.upd == 2 ? 2 : 1, ppt.process);
-		if (panel.imgView && this.checkSelection) {
-			setSelection(ppt.followPlaylistFocus && !ppt.libSource ? fb.GetFocusItem() : img.setSelection() ? fb.GetSelection() : null);
+		if (this.checkSelection) {
+			setSelection(ppt.followPlaylistFocus && !ppt.libSource ? fb.GetFocusItem() : panel.setSelection() ? fb.GetSelection() : null);
 			this.checkSelection = false;
 		}
 		this.upd = 0;
@@ -360,11 +391,14 @@ class Library {
 
 	checkView() {
 		const startIX = ppt.rememberView ? panel.grp.length : 0
-		for (let i = startIX; i < 100; i++) ppt.set(`Tree.View ${$.padNumber(i, 2) + (!panel.imgView ? '' : ' Image')}`, null); // clear non-existent
+		for (let i = startIX; i < 100; i++) {
+			ppt.set(`Tree.View ${$.padNumber(i, 2) + (!panel.imgView ? '' : ' Image')}`, null); // clear non-existent
+			ppt.set(`Tree.View ${$.padNumber(i, 2) + (!panel.imgView ? ' Search' : ' Image Search')}`, null); // clear non-existent
+		}
 		if (ppt.rememberTree) {
-			this.exp = ppt.rememberView ? ppt.get(this.rememberViewProp(), JSON.stringify({})) : ppt.get(!panel.imgView ? 'Tree' : 'Tree Image', JSON.stringify({}))
+			this.exp = ppt.get(this.rememberViewProp(), JSON.stringify({}));
 			this.exp = $.jsonParse(this.exp, {});
-		} else ppt.set(!panel.imgView ? 'Tree' : 'Tree Image', null);
+		} else ppt.set(!panel.imgView ? 'Tree' + (panel.search.txt ? ' Search' : '') : 'Tree Image' + (panel.search.txt ? ' Search' : ''), null);
 	}
 
 	expandArr(arr) {
@@ -374,12 +408,22 @@ class Library {
 		});
 	}
 
-	eval(n) {
-		if (!n || !fb.IsPlaying) return '';
-		const tfo = FbTitleFormat(n);
-		if (fb.IsPlaying && fb.PlaybackLength <= 0) return tfo.Eval();
-		const handle = fb.GetNowPlaying();
-		return handle ? tfo.EvalWithMetadb(handle) : '';
+	eval(n, type) {
+		let handle, tfo;
+		switch (type) {
+			case 'nowplaying':
+				if (!n || !fb.IsPlaying) return '';
+				tfo = FbTitleFormat(n);
+				if (fb.IsPlaying && fb.PlaybackLength <= 0) return tfo.Eval();
+				handle = fb.GetNowPlaying();
+				return handle ? tfo.EvalWithMetadb(handle) : '';
+			case 'selected':
+				if (!n) return '';
+				tfo = FbTitleFormat(n);
+				if (fb.IsPlaying && fb.PlaybackLength <= 0) return tfo.Eval();
+				handle = fb.GetFocusItem();
+				return handle ? tfo.EvalWithMetadb(handle) : '';
+		}
 	}
 
 	flattenArr(arr) {
@@ -402,7 +446,11 @@ class Library {
 		this.filterQuery = panel.filter.mode[ppt.filterBy].type;
 		while (this.filterQuery.includes('$nowplaying{')) {
 			const q = this.filterQuery.match(/\$nowplaying{(.+?)}/);
-			this.filterQuery = this.filterQuery.replace(q[0], this.eval(q[1]));
+			this.filterQuery = this.filterQuery.replace(q[0], this.eval(q[1], 'nowplaying') || `~#No Value For Item#~`);
+		}
+		while (this.filterQuery.includes('$selected{')) {
+			const q = this.filterQuery.match(/\$selected{(.+?)}/);
+			this.filterQuery = this.filterQuery.replace(q[0], this.eval(q[1], 'selected') || `~#No Value For Item#~`);
 		}
 	}
 
@@ -419,16 +467,18 @@ class Library {
 			}
 		}
 		if (!items) {
-			this.list = [plman.GetPlaylistItems($.pl_active), !ppt.fixedPlaylist ? fb.GetLibraryItems() : plman.GetPlaylistItems(fixedPlaylistIndex), plman.GetPlaylistItems(plman.FindPlaylist(ppt.panelSelectionPlaylist))][ppt.libSource];
+			this.list = [plman.GetPlaylistItems($.pl_active), !ppt.fixedPlaylist ? fb.GetLibraryItems() : plman.GetPlaylistItems(fixedPlaylistIndex), plman.GetPlaylistItems(plman.FindPlaylist(ppt.lastPanelSelectionPlaylist))][ppt.libSource];
+			if (ppt.recItemImage && ppt.libSource == 2) ui.expandHandle = this.list.Count ? this.list[0] : null;
 			if (ppt.libSource != 2) this.full_list = this.list.Clone();
 		}
-		if (ppt.libSource && (!this.list.Count || !fb.IsLibraryEnabled())) {
+		if (ppt.libSource && (!this.list.Count || !fb.IsLibraryEnabled() && ppt.libSource == 1)) {
 			pop.clearTree();
 			sbar.setRows(0);
-			this.empty = ppt.libSource == 1 ? (!ppt.fixedPlaylist ? 'Nothing to show\n\nClick here to configure the media library' : 'Nothing found\n\n') : 'Panel Mode\nNo items received\n';
+			this.empty = ppt.libSource == 1 ? (!ppt.fixedPlaylist ? (!this.list.Count && this.v2_init ? 'Loading...\n\n' : 'Nothing to show\n\nClick here to configure the media library') : 'Nothing found\n\n') : 'Nothing received';
 			panel.treePaint();
 			return;
 		}
+
 		pop.libItems = true;
 		panel.forcePaint();
 		if (ppt.filterBy) {
@@ -462,63 +512,140 @@ class Library {
 		return false;
 	}
 
+	initialise(handleList) {
+		lib.initialised = true;
+		this.load(handleList);
+		this.getLibrary(true);
+		this.rootNodes(ppt.rememberTree, ppt.process);
+	}
+
+	isMainChanged(handleList) {
+		let i, items;
+		let tree_type = !panel.folderView ? 0 : 1;
+			switch (tree_type) { // check for changes to items; any change updates all
+				case 0: {
+					let tfo = FbTitleFormat(panel.view);
+					items = tfo.EvalWithMetadbs(handleList);
+					let ret = handleList.Convert().some((h, j) => {
+						i = this.list.Find(h);
+						if (i != -1) {
+							let libItem = [];
+							if (!panel.imgView || panel.lines != 2) libItem = this.libNode[i];
+							else {
+								libItem = this.libNode[i].slice();
+								libItem[0] = libItem[0].split('^@^');
+								libItem = libItem.flat();
+							}
+							return !$.equal(libItem, items[j].split(panel.splitter));
+						}
+					});
+					if (ret) return true;
+					if (ppt.itemShowStatistics < 2) return false;
+					this.checkStatistics(handleList);
+					break;
+				}
+				
+			case 1: {
+				items = handleList.GetLibraryRelativePaths();
+				let ret = handleList.Convert().some((h, j) => {
+					i = this.list.Find(h);
+					if (i != -1) {
+						let libItem = [];
+						if (!panel.imgView || panel.lines != 2) libItem = this.libNode[i];
+						else {
+							libItem = this.libNode[i].slice();
+							libItem[0] = libItem[0].split('^@^');
+							libItem = libItem.flat();
+						}
+						return !$.equal(libItem, items[j].split('\\'));
+					}
+				});
+				if (ret) return true;
+				if (ppt.itemShowStatistics < 2) return false;
+				this.checkStatistics(handleList);
+				break;
+			}
+		}
+	}
+
+	load(handleList) {
+		let fixedPlaylistIndex = -1;
+		if (ppt.fixedPlaylist) {
+			fixedPlaylistIndex = plman.FindPlaylist(ppt.fixedPlaylistName);
+			if (fixedPlaylistIndex == -1) {
+				ppt.fixedPlaylist = false;
+				ppt.libSource = 0;
+			}
+		}
+		this.list = [plman.GetPlaylistItems($.pl_active), !ppt.fixedPlaylist ? (handleList ? handleList : fb.GetLibraryItems()) : plman.GetPlaylistItems(fixedPlaylistIndex), plman.GetPlaylistItems(plman.FindPlaylist(ppt.lastPanelSelectionPlaylist))][ppt.libSource];
+		if (ppt.recItemImage && ppt.libSource == 2) ui.expandHandle = this.list.Count ? this.list[0] : null;
+		this.full_list = this.list.Clone();
+		if (this.list.Count) this.v2_init = false;
+	
+		if (ppt.libSource && (!this.list.Count || !fb.IsLibraryEnabled() && ppt.libSource == 1)) {
+			this.empty = ppt.libSource == 1 ? (!ppt.fixedPlaylist ? (!this.list.Count && this.v2_init ? 'Loading...\n\n' : 'Nothing to show\n\nClick here to configure the media library') : 'Nothing found\n\n') : 'Nothing received';
+			panel.treePaint();
+		}
+	}
+
 	logFilter() {
 		ppt.process = true;
 		const key = !ppt.rememberView ? 'def' : panel.viewName;
 		if (!$.objHasOwnProperty(this.exp, key)) this.exp[key] = {};
 		this.exp[key].filter = panel.filter.menu[ppt.filterBy];
-		ppt.rememberView ? ppt.set(this.rememberViewProp(), JSON.stringify(this.exp)) : ppt.set(!panel.imgView ? 'Tree' : 'Tree Image', JSON.stringify(this.exp));
+		ppt.set(this.rememberViewProp(), JSON.stringify(this.exp));
 	}
 
 	logTree() {
 		if (!pop.tree.length) return;
 		let i = 0;
 		let ix = -1;
-		let tr = 0;
+		let level = 0;
 		this.expand = [];
 		ppt.process = true;
 		this.sel = [];
 		pop.tree.forEach(v => {
-			tr = !ppt.rootNode ? v.tr : v.tr - 1;
+			level = !ppt.rootNode ? v.level : v.level - 1;
 			if (v.child.length) this.expand.push({
-				tr: tr,
-				a: tr < 1 ? v.root || v.srt[0] : pop.tree[v.par].root || pop.tree[v.par].srt[0],
-				b: tr < 1 ? '' : v.srt[0]
+				level: level,
+				a: level < 1 ? v.root || v.srt[0] : pop.tree[v.par].root || pop.tree[v.par].srt[0],
+				b: level < 1 ? '' : v.srt[0]
 			});
-			tr = v.tr;
+			level = v.level;
 			if (v.sel == true) this.sel.push({
-				tr: tr,
+				level: level,
 				a: v.root || v.srt[0],
-				b: tr != 0 ? pop.tree[v.par].root || pop.tree[v.par].srt[0] : '',
-				c: tr > 1 ? pop.tree[pop.tree[v.par].par].root || pop.tree[pop.tree[v.par].par].srt[0] : ''
+				b: level != 0 ? pop.tree[v.par].root || pop.tree[v.par].srt[0] : '',
+				c: level > 1 ? pop.tree[pop.tree[v.par].par].root || pop.tree[pop.tree[v.par].par].srt[0] : ''
 			});
 		});
 		ix = pop.get_ix(!panel.imgView ? 0 : img.panel.x + 1, (!panel.imgView || img.style.vertical ? panel.tree.y : panel.tree.x) + sbar.row.h / 2, true, false);
-		tr = 0;
+		level = 0;
 		let l = Math.min(Math.floor(ix + panel.rows), pop.tree.length);
 		if (ix != -1) {
 			this.scr = [];
 			for (i = ix; i < l; i++) {
-				tr = pop.tree[i].tr;
+				level = pop.tree[i].level;
 				this.scr.push({
-					tr: tr,
+					level: level,
 					a: pop.tree[i].root || pop.tree[i].srt[0],
-					b: tr != 0 ? pop.tree[pop.tree[i].par].root || pop.tree[pop.tree[i].par].srt[0] : '',
-					c: tr > 1 ? pop.tree[pop.tree[pop.tree[i].par].par].root || pop.tree[pop.tree[pop.tree[i].par].par].srt[0] : ''
+					b: level != 0 ? pop.tree[pop.tree[i].par].root || pop.tree[pop.tree[i].par].srt[0] : '',
+					c: level > 1 ? pop.tree[pop.tree[pop.tree[i].par].par].root || pop.tree[pop.tree[pop.tree[i].par].par].srt[0] : ''
 				})
 			}
 		}
 		this.sortByLevel(this.expand);
 		if (ppt.rememberTree) {
 			const key = !ppt.rememberView ? 'def' : panel.viewName;
+			const cur_sel = this.exp[key] ? this.exp[key].sel : [];
 			this.exp[key] = {
 				exp: this.expand,
 				filter: panel.filter.menu[ppt.filterBy],
 				scr: this.scr,
-				sel: this.sel,
+				sel: this.sel.length ? this.sel : cur_sel,
 				s_txt: panel.search.txt
 			}
-			ppt.rememberView ? ppt.set(this.rememberViewProp(), JSON.stringify(this.exp)) : ppt.set(!panel.imgView ? 'Tree' : 'Tree Image', JSON.stringify(this.exp));
+			ppt.set(this.rememberViewProp(), JSON.stringify(this.exp));
 		}
 	}
 
@@ -583,13 +710,29 @@ class Library {
 				window.Repaint();
 			} else {
 				this.exp = {};
-				ppt.rememberView ? ppt.set(this.rememberViewProp(), null) : ppt.set(!panel.imgView ? 'Tree' : 'Tree Image', JSON.stringify(this.exp));
+				ppt.rememberView ? ppt.set(this.rememberViewProp(), null) : ppt.set(!panel.imgView ? 'Tree' + (panel.search.txt ? ' Search' : '') : 'Tree Image' + (panel.search.txt ? ' Search' : ''), JSON.stringify(this.exp));
 			}
 		} else ppt.process = false;
 	}
 
 	rememberViewProp() {
-		return `Tree.View ${$.padNumber(ppt.viewBy, 2) + (!panel.imgView ? '' : ' Image')}`
+		let isValidProp, prop, property;
+		switch (ppt.rememberView) {
+			case true:
+				property = `Tree.View ${$.padNumber(ppt.viewBy, 2) + (!panel.imgView ? '' : ' Image') + ' Search'}`;
+				if (panel.search.txt) return property;
+				prop = ppt.get(property);
+				isValidProp = prop && prop.includes('exp');
+				if (isValidProp) return property;
+				return `Tree.View ${$.padNumber(ppt.viewBy, 2) + (!panel.imgView ? '' : ' Image')}`;
+			case false:
+				property = !panel.imgView ? 'Tree Search' : 'Tree Image Search';
+				if (panel.search.txt) return property;
+				prop = ppt.get(property);
+				isValidProp = prop && prop.includes('exp');
+				if (isValidProp) return property;
+				return !panel.imgView ? 'Tree' : 'Tree Image';
+		}
 	}
 
 	removed(handleList) {
@@ -629,12 +772,7 @@ class Library {
 		} else panel.list = this.list;
 
 		if (ppt.libSource && !this.full_list.Count) {
-			this.empty = ppt.libSource == 1 ? (!ppt.fixedPlaylist ? 'Nothing to show\n\nClick here to configure the media library' : 'Nothing found\n\n') : 'Panel Mode\nNo items received\n';
-			this.root = [];
-			pop.clearTree();
-			sbar.setRows(0);
-			panel.treePaint();
-			this.noListUpd = true;
+			this.empty = ppt.libSource == 1 ? (!ppt.fixedPlaylist ? 'Nothing to show\n\nClick here to configure the media library' : 'Nothing found\n\n') : 'Nothing received';
 		}
 	}
 
@@ -775,21 +913,20 @@ class Library {
 		if (!ppt.rootNode || panel.search.txt) pop.buildTree(this.root, 0);
 		if (ppt.rootNode) pop.branch(this.root[0], true);
 		if (panel.pn_h_auto && !panel.imgView && (panel.init || lib_update) && ppt.pn_h == ppt.pn_h_min && pop.tree[0]) pop.clearChild(pop.tree[0]);
-		panel.init = false;
-		// $.trace('initialised in: ' + this.time.Time / 1000 + ' seconds');
+		panel.init = false; // $.trace('initialised in: ' + this.time.Time / 1000 + ' seconds');
 
 		if (lib_update !== 2) this.checkAutoExpand();
 		if (lib_update && process) {
 			if (!panel.imgView) {
 				this.expand.forEach(v => {
-					if (v.tr == 0) {
+					if (v.level == 0) {
 						pop.tree.some(w => {
 							if (this.match(w, v.a)) {
 								pop.branch(w);
 								return true;
 							}
 						});
-					} else if (v.tr > 0) {
+					} else if (v.level > 0) {
 						pop.tree.some(w => {
 							if (this.match(w, v.b) && this.match(pop.tree[w.par], v.a)) {
 								pop.branch(w);
@@ -800,15 +937,15 @@ class Library {
 				});
 			}
 			this.sel.forEach(v => {
-				if (v.tr == 0) {
+				if (v.level == 0) {
 					pop.tree.some(w => {
 						if (this.match(w, v.a)) return w.sel = true;
 					});
-				} else if (v.tr == 1) {
+				} else if (v.level == 1) {
 					pop.tree.some(w => {
 						if (this.match(w, v.a) && this.match(pop.tree[w.par], v.b)) return w.sel = true;
 					});
-				} else if (v.tr > 1) {
+				} else if (v.level > 1) {
 					pop.tree.some(w => {
 						if (this.match(w, v.a) && this.match(pop.tree[w.par], v.b) && this.match(pop.tree[pop.tree[w.par].par], v.c)) return w.sel = true;
 					});
@@ -817,21 +954,21 @@ class Library {
 			let scr_pos = false;
 			this.scr.some((v, h) => {
 				if (scr_pos) return true;
-				if (v.tr == 0) {
+				if (v.level == 0) {
 					pop.tree.some((w, j) => {
 						if (this.match(w, v.a)) {
 							sbar.scrollMemory(h, j);
 							return scr_pos = true;
 						}
 					});
-				} else if (v.tr == 1) {
+				} else if (v.level == 1) {
 					pop.tree.some((w, j) => {
 						if (this.match(w, v.a) && this.match(pop.tree[w.par], v.b)) {
 							sbar.scrollMemory(h, j);
 							return scr_pos = true;
 						}
 					});
-				} else if (v.tr > 1) {
+				} else if (v.level > 1) {
 					pop.tree.some((w, j) => {
 						if (this.match(w, v.a) && this.match(pop.tree[w.par], v.b) && this.match(pop.tree[pop.tree[w.par].par], v.c)) {
 							sbar.scrollMemory(h, j);
@@ -845,7 +982,7 @@ class Library {
 				panel.treePaint();
 			}
 		} else this.treeState(false, ppt.rememberTree);
-		if (panel.imgView) img.load();
+		if (panel.imgView && total) img.load();
 		if (lib_update && !process) {
 			sbar.reset();
 			panel.treePaint();
@@ -866,6 +1003,20 @@ class Library {
 		this.checkView();
 		this.logTree();
 	}
+	
+	setNodes() {
+		if (panel.search.txt == '' && ppt.rememberPreSearch) {
+			ppt.set(this.rememberViewProp(), JSON.stringify({}));
+			this.checkView();
+			this.logFilter();
+			this.readTreeState(true);
+			this.rootNodes(ppt.rememberTree, ppt.process);
+			this.treeState(false, ppt.rememberTree);
+		} else {
+			this.treeState(false, ppt.rememberTree);
+			this.rootNodes();
+		}
+	}
 
 	sort(name) {
 		if (panel.multiProcess) name = name.replace(/#!#/g, '');
@@ -876,7 +1027,7 @@ class Library {
 	}
 
 	sortByLevel(data) {
-		data.sort((a, b) => parseFloat(a.tr) - parseFloat(b.tr));
+		data.sort((a, b) => parseFloat(a.level) - parseFloat(b.level));
 		return data;
 	}
 
@@ -896,66 +1047,29 @@ class Library {
 		} else this.updateLibrary(handleList, handleType)
 	}
 
-	isMainChanged(handleList) {
-		let i, items;
-		let tree_type = !panel.folderView ? 0 : 1;
-		switch (tree_type) { // check for changes to items; any change updates all
-			case 0: {
-				let tfo = FbTitleFormat(panel.view);
-				items = tfo.EvalWithMetadbs(handleList);
-				return handleList.Convert().some((h, j) => {
-					i = this.list.Find(h);
-					if (i != -1) {
-						let libItem = [];
-						if (!panel.imgView || panel.lines != 2) libItem = this.libNode[i];
-						else {
-							libItem = this.libNode[i].slice();
-							libItem[0] = libItem[0].split('^@^');
-							libItem = libItem.flat();
-						}
-						if (!$.isArray(libItem) || !items[j]) return 'outOfBounds';
-						return !$.equal(libItem, items[j].split(panel.splitter));
-					}
-				});
-			}
-			case 1:
-				items = handleList.GetLibraryRelativePaths();
-				return handleList.Convert().some((h, j) => {
-					i = this.list.Find(h);
-					if (i != -1) {
-						let libItem = [];
-						if (!panel.imgView || panel.lines != 2) libItem = this.libNode[i];
-						else {
-							libItem = this.libNode[i].slice();
-							libItem[0] = libItem[0].split('^@^');
-							libItem = libItem.flat();
-						}
-						if (!$.isArray(libItem)) return 'outOfBounds';
-						return !$.equal(libItem, items[j].split('\\'));
-					}
-				});
-		}
-	}
-
 	updateLibrary(handleList, handleType) {
-		if (this.list.Count != this.libNode.length) return;
+		if (!this.initialised || this.list.Count != this.libNode.length) return;
 		this.noListUpd = false;
 		switch (handleType) {
-			case 0:
-				this.added(handleList);
+			case 0: {
+				let origList = this.list.Clone();
+				origList.Sort();
+				handleList.Sort();
+				handleList.MakeDifference(origList);
+				if (handleList.Count) this.added(handleList);
 				if (this.noListUpd) break;
 				if (ui.w < 1 || !window.IsVisible) this.upd = 2;
 				else this.lib_update();
 				break;
+			}
 			case 1: {
 				// check for changes to items; any change updates all
 				const isMainChanged = this.isMainChanged(handleList);
-				if (isMainChanged == 'outOfBounds') return;
 				if (isMainChanged) {
 					this.removed(handleList);
 					this.added(handleList);
 					if (ui.w < 1 || !window.IsVisible) this.upd = 2;
-					else this.lib_update();
+					else this.lib_update(isMainChanged);
 					break;
 				}
 				if (ppt.filterBy && !this.filterQuery.includes('$searchtext')) { // filter: check if not done 

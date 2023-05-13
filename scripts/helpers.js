@@ -64,11 +64,8 @@ class Helpers {
 		var o,u,a,c,v,f,d=0,m=!1,j=!1,n=!0;if('function'!=typeof e)throw new TypeError('debounce: invalid function');function T(i){var n=o,t=u;return o=u=void 0,d=i,c=e.apply(t,n)}function b(i){var n=i-f;return void 0===f||r<=n||n<0||j&&a<=i-d}function l(){var i,n,t=Date.now();if(b(t))return w(t);v=setTimeout(l,(n=r-((i=t)-f),j?Math.min(n,a-(i-d)):n))}function w(i){return v=void 0,n&&o?T(i):(o=u=void 0,c)}function t(){var i,n=Date.now(),t=b(n);if(o=arguments,u=this,f=n,t){if(void 0===v)return d=i=f,v=setTimeout(l,r),m?T(i):c;if(j)return v=setTimeout(l,r),T(f)}return void 0===v&&(v=setTimeout(l,r)),c}return r=parseFloat(r)||0,this.isObject(i)&&(m=!!i.leading,a=((j='maxWait'in i))?Math.max(parseFloat(i.maxWait)||0,r):a,n='trailing'in i?!!i.trailing:n),t.cancel=function(){void 0!==v&&clearTimeout(v),o=f=u=v=void(d=0)},t.flush=function(){return void 0===v?c:w(Date.now())},t;
 	}
 
-	folder(fo) {
-		return fso.FolderExists(fo);
-	}
-
 	equal(arr1, arr2) {
+		if (!this.isArray(arr1) || !this.isArray(arr2)) return false;
 		let i = arr1.length;
 		if (i != arr2.length) return false;
 		while (i--)
@@ -76,8 +73,21 @@ class Helpers {
 		return true;
 	}
 
+	equalHandles(arr1, arr2) {
+		if (!this.isArray(arr1) || !this.isArray(arr2)) return false;
+		let i = arr1.length;
+		if (i != arr2.length) return false;
+		while (i--)
+			if (!arr1[i].Compare(arr2[i])) return false;
+		return true;
+	}
+
 	file(f) {
-		return fso.FileExists(f);
+		return typeof f === 'string' && fso.FileExists(f);
+	}
+
+	folder(fo) {
+		return typeof fo === 'string' && fso.FolderExists(fo);
 	}
 
 	getClipboardData() {
@@ -162,6 +172,11 @@ class Helpers {
 		return l;
 	}
 
+	range(start, stop, step) {
+		step = step || 1;
+		return Array.from({length: (stop - start) / step + 1}, (_, i) => start + i * step);
+	}
+
 	regexEscape(n) {
 		return n.replace(/[*+\-?^!:&"~${}()|[\]/\\]/g, '\\$&');
 	}
@@ -232,7 +247,7 @@ class Helpers {
 	}
 
 	throttle(e,i,t) {
-		var n=!0,r=!0;if('function'!=typeof e)throw new TypeError('throttle: invalid function');return this.isObject(t)&&(n='leading'in t?!!txt.leading:n,r='trailing'in t?!!txt.trailing:r),this.debounce(e,i,{leading:n,maxWait:i,trailing:r})
+		var n=!0,r=!0;if('function'!=typeof e)throw new TypeError('throttle: invalid function');return this.isObject(t)&&(n='leading'in t?!!txt.leading:n,r='trailing'in t?!!txt.trailing:r),this.debounce(e,i,{leading:n,maxWait:i,trailing:r});
 	}
 
 	titlecase(n) {

@@ -23,17 +23,9 @@ class UserInterface {
 		}
 
 		this.font = {
-			duration: gdi.Font('Segoe UI Semibold', 16, 0),
-			find: gdi.Font('Segoe UI', 24, 0),
-			group: gdi.Font('Segoe UI', 16, 1),
 			groupEllipsisSpace: 0,
-			lot: gdi.Font('Segoe UI Semibold', 16, 0),
 			lotEllipsisSpace: 0,
-			main: gdi.Font('Segoe UI', 16, 0),
 			mainEllipsisSpace: 0,
-			search: gdi.Font('Segoe UI', 16, 0),
-			small: gdi.Font('Segoe UI', 10, 0),
-			tracks:  gdi.Font('Segoe UI', 11, 0),
 			zoomSize: 16
 		}
 
@@ -56,6 +48,11 @@ class UserInterface {
 			local: typeof conf === 'undefined' ? false : true,
 			touch_dn: -1,
 			tree: ''
+		}
+
+		this.last_pressed_coord = {
+			x: -1,
+			y: -1
 		}
 
 		this.img = {
@@ -114,22 +111,22 @@ class UserInterface {
 			node_base: Math.round(11 * $.scale),
 			pad: 1,
 			sel: 3,
-			sideMarker: 2,
+			sideMarker: 4,
 			sp: 6,
 			sp1: 6,
 			sp2: 6,
 			y_start: 0
 		}
 
+		this.themeColour = {}
+
 		this.focus_changed = $.debounce(() => {
-			this.on_playback_new_track();
-		}, 250, {
-			'leading': true,
-			'trailing': true
-		});
+			if (!ppt.recItemImage || ppt.libSource != 2) this.on_playback_new_track();
+		}, 250);
 
 		this.setNodes();
 		this.getColours();
+		this.getFont(true);
 		this.createImages();
 		this.setSbar();
 
@@ -223,14 +220,14 @@ class UserInterface {
 		this.l.s2 = Math.floor(this.sz.node / 2) + this.l.wc;
 		this.l.s3 = Math.max(7, this.sz.node / 2) - this.l.wf;
 
-		this.icon.w = pop.inlineRoot && ppt.treeListView ? 0 : this.style.squareNode ? this.sz.node + this.sz.sp1 : this.sz.sp + this.sz.sp2;
+		this.icon.w = ppt.facetView ? 0 : this.style.squareNode ? this.sz.node + this.sz.sp1 : this.sz.sp + this.sz.sp2;
 
 		this.sz.sel = (this.style.squareNode ? this.sz.sp1 : this.sz.sp + Math.round(this.sz.sp / 3)) / 2;
 		this.sz.margin = this.style.topBarShow && pop.inlineRoot ? ppt.margin + Math.floor(Math.max(this.font.main.Size * 10 / 27, 5)) : ppt.margin;
-		this.sz.marginRight = ppt.countsRight || ppt.itemShowDuration ? ppt.margin + Math.floor(Math.max(this.font.main.Size * 10 / 27, 5)) : ppt.margin;
+		this.sz.marginRight = ppt.countsRight || ppt.itemShowStatistics ? ppt.margin + Math.floor(Math.max(this.font.main.Size * 10 / 27, 5)) : ppt.margin;
+		if (ppt.facetView) this.sz.margin = this.sz.marginRight = (ppt.sbarShow ? Math.max(ppt.margin, this.sbar.sp + 7 * $.scale) : ppt.margin)
 		this.sz.marginSearch = this.sz.margin;
-
-		if (this.style.topBarShow && (ppt.countsRight || ppt.itemShowDuration || ppt.rowStripes || ppt.fullLineSelection || pop.inlineRoot || ppt.nodeStyle == 3 || ppt.nodeStyle == 4)) this.sz.marginSearch -= 1;
+		if (this.style.topBarShow && (ppt.countsRight || ppt.itemShowStatistics || ppt.rowStripes || ppt.fullLineSelection || pop.inlineRoot || ppt.nodeStyle == 3 || ppt.nodeStyle == 4)) this.sz.marginSearch -= 1;
 		if (this.style.topBarShow && !pop.inlineRoot && (ppt.nodeStyle == 3 || ppt.nodeStyle == 4)) this.sz.marginSearch -= 1;
 		this.id.tree = this.font.main.Name + this.font.main.Size + this.font.main.Style + this.icon.w + this.sz.margin + this.sz.marginSearch;
 		if (refreshImg) img.sizeDebounce();
@@ -242,7 +239,7 @@ class UserInterface {
 		const font2 = gdi.Font('Segoe UI', 120, 1);
 		const font3 = gdi.Font('Segoe UI', 200, 1);
 		const font4 = gdi.Font('Segoe UI', 90, 1);
-		const tcol = !this.img.blurDark && !this.img.blurLight ? this.col.text : this.dui ? window.GetColourDUI(0) : window.GetColourCUI(0);
+		const tcol = this.col.text;
 		for (let i = 0; i < 2; i++) {
 			this.img.stub[i] = $.gr(500, 500, true, g => {
 				g.SetSmoothingMode(2);
@@ -279,7 +276,6 @@ class UserInterface {
 	}
 
 	drawTopBarUnderlay(gr) {
-		if (!ui.style.topBarShow) return;
 		if ((this.img.isBlur || this.img.bg) && this.img.cur) {
 			gr.FillSolidRect(0, 0, this.w, img.panel.y, this.col.topBarUnderlay);
 			gr.DrawImage(this.img.cur, 0, 0, this.w, img.panel.y, 0, 0, this.img.cur.Width, panel.search.h);
@@ -376,30 +372,60 @@ class UserInterface {
 		}
 	}
 
+	getBlurColours() {
+		switch (true) {
+			case !ppt.themed:
+				if (ppt.theme > 5) ppt.theme = 0; // reset if coming from themed & out of bounds
+				this.img.isBlur = ppt.theme && ppt.theme < 5;
+				this.img.bg = ppt.theme == 5;
+				this.img.blendAlpha = $.clamp($.clamp(ppt.blurAlpha, 0, 100) * 105 / 30, 0, 255);
+				this.img.blurAlpha = $.clamp(ppt.blurAlpha, 0, 100) / 30;
+				this.img.blurBlend = ppt.theme == 2;
+				this.img.blurDark = ppt.theme == 1 || ppt.theme == 4;
+				this.img.blurLevel = ppt.theme == 2 ? 91.05 - $.clamp(ppt.blurTemp, 1.05, 90) : $.clamp(ppt.blurTemp * 2, 0, 254);
+				this.img.blurLight = ppt.theme == 3;
+				this.img.covAlpha = $.clamp(ppt.covAlpha * 2.55, 0, 255);
+				if (this.img.blurDark) {
+					this.col.bg_light = RGBA(0, 0, 0, Math.min(160 / this.img.blurAlpha, 255));
+					this.col.bg_dark = RGBA(0, 0, 0, Math.min(80 / this.img.blurAlpha, 255));
+				}
+				if (this.img.blurLight) {
+					this.col.bg_light = RGBA(255, 255, 255, Math.min(160 / this.img.blurAlpha, 255));
+					this.col.bg_dark = RGBA(255, 255, 255, Math.min(205 / this.img.blurAlpha, 255));
+				}
+				break;
+			case ppt.themed:
+				this.img.isBlur = ppt.theme || ppt.themeBgImage;
+				this.img.blurBlend = ppt.theme == 6 || ppt.theme == 7;
+				this.img.blurDark = ppt.theme == 1 && !ppt.themeLight || ppt.theme == 2 && !ppt.themeLight || ppt.theme == 3 || ppt.theme == 4 || ppt.theme == 5 || ppt.theme == 9;
+				this.img.blurLight = ppt.theme == 1 && ppt.themeLight || ppt.theme == 2 && ppt.themeLight || ppt.theme == 8;
+				break;
+		}
+	}
+
+	getButCol(c, bypass) {
+		return this.getLuminance(c, bypass) > 0.35 ? 50 : 200;
+	}
+
 	getColours() {
 		this.assignColours();
 		this.getBlurColours();
 		this.getUIColours();
 		this.getItemColours();
-	}
-
-	getBlurColours() {
-		this.img.isBlur = ppt.theme && ppt.theme < 5;
-		this.img.bg = ppt.theme == 5;
-		this.img.blendAlpha = $.clamp($.clamp(ppt.blurAlpha, 0, 100) * 105 / 30, 0, 255);
-		this.img.blurAlpha = $.clamp(ppt.blurAlpha, 0, 100) / 30;
-		this.img.blurBlend = ppt.theme == 2;
-		this.img.blurDark = ppt.theme == 1 || ppt.theme == 4;
-		this.img.blurLevel = ppt.theme == 2 ? 91.05 - $.clamp(ppt.blurTemp, 1.05, 90) : $.clamp(ppt.blurTemp * 2, 0, 254);
-		this.img.blurLight = ppt.theme == 3;
-		this.img.covAlpha = $.clamp(ppt.covAlpha * 2.55, 0, 255);
-		if (this.img.blurDark) {
-			this.col.bg_light = RGBA(0, 0, 0, Math.min(160 / this.img.blurAlpha, 255));
-			this.col.bg_dark = RGBA(0, 0, 0, Math.min(80 / this.img.blurAlpha, 255));
-		}
-		if (this.img.blurLight) {
-			this.col.bg_light = RGBA(255, 255, 255, Math.min(160 / this.img.blurAlpha, 255));
-			this.col.bg_dark = RGBA(255, 255, 255, Math.min(205 / this.img.blurAlpha, 255));
+		
+		if (ppt.themed) {
+			if ((ppt.theme == 0 || ppt.theme == 6 || ppt.theme == 7) && this.themeColour && ppt.themeColour) {
+				// nothing to do
+			} else {
+				this.themeColour = {
+					name: 'User interface',
+					text: this.col.text,
+					background: this.col.bg,
+					selection: this.col.bgSel,
+					highlight: this.col.text_h,
+					bar: RGBA(0, 0, 0, 63)
+				}
+			}
 		}
 	}
 
@@ -409,13 +435,13 @@ class UserInterface {
 	}
 
 	getContrast(c1, c2) {
-		c1 = this.getSelCol(c1, false, true);
-		c2 = this.getSelCol(c2, false, true);
+		c1 = this.getLuminance(c1);
+		c2 = this.getLuminance(c2);
 		return Math.max(c1 / c2, c2 / c1);
 	}
 
 	getFbImg(handle) {
-		if (!handle) handle = fb.IsPlaying ? fb.GetNowPlaying() : fb.GetFocusItem();
+		if (!handle) handle = (!ppt.recItemImage || ppt.libSource != 2) ? (fb.IsPlaying ? fb.GetNowPlaying() : fb.GetFocusItem()) : this.expandHandle;
 		if (handle) {
 			this.cur_handle = handle;
 			utils.GetAlbumArtAsync(0, handle, 0);
@@ -430,8 +456,16 @@ class UserInterface {
 		this.formatImg(image);
 	}
 
-	getFont() {
-		const RunningWine = () => utils.IsFile('Z:\\bin\\bash' || 'Z:\\bin\\ls' || 'Z:\\bin\\sh' || 'Z:\\etc\\fstab'); /* detects if user is running Wine on Linux or MacOs, default Wine mount point is Z:\ */
+	getFont(init) {
+		const DetectWine = () => { /*Detects if user is running Wine on Linux or MacOs, default Wine mount point is Z:\*/
+			const diskLetters = Array.from(Array(26)).map((e, i) => i + 65).map((x) => `${String.fromCharCode(x)}:\\`);
+			const paths = ['bin\\bash', 'bin\\ls', 'bin\\sh', 'etc\\fstab'];
+			return diskLetters.some(d => {
+				try { // Needed when permission error occurs and current SMP implementation is broken for some devices....
+					return utils.IsDirectory(d) ? paths.some(p => utils.IsFile(d + p)) : false;
+				} catch (e) {return false;}
+			});
+		}
 
 		if (ppt.custFontUse && ppt.custFont.length) {
 			const custFont = $.split(ppt.custFont, 1);
@@ -441,7 +475,7 @@ class UserInterface {
 
 		if (this.id.local) this.font.main = c_font;
 
-		if (!this.font.main || /tahoma/i.test(this.font.main.Name) && RunningWine()) { // Windows: check still needed (test MS Serif or Modern, neither can be used); Wine: tahoma is default system font, but bold and some unicode characters don't work: if Wine + tahoma detected changed to Segoe UI (if that's not installed, tahoma is still used) 
+		if (!this.font.main || /tahoma/i.test(this.font.main.Name) && DetectWine()) { // Windows: check still needed (test MS Serif or Modern, neither can be used); Wine: tahoma is default system font, but bold and some unicode characters don't work: if Wine + tahoma detected changed to Segoe UI (if that's not installed, tahoma is still used) 
 			this.font.main = gdi.Font('Segoe UI', 16, 0);
 			$.trace('Spider Monkey Panel is unable to use your default font. Using Segoe UI at default size & style instead', false);
 		}
@@ -471,10 +505,11 @@ class UserInterface {
 			}
 		}
 
-		this.font.small = gdi.Font(this.font.main.Name, Math.round(this.font.main.Size * 12 / 14), this.font.main.Style);
+		this.font.label = gdi.Font(this.font.main.Name, !ppt.treeAutoExpand || ppt.libSource != 2 ? Math.round(this.font.main.Size * 11 / 14) : this.font.main.Size, this.font.main.Style);
+		this.font.small = gdi.Font(this.font.main.Name, !ppt.treeAutoExpand || ppt.libSource != 2 ? Math.round(this.font.main.Size * 12 / 14) : this.font.main.Size, this.font.main.Style);
 		this.font.tracks = gdi.Font('Arial', Math.round(this.font.main.Size * 12 / 14), 2);
-		this.sz.sideMarker = ppt.sideMarkerWidth ? Math.max(ppt.sideMarkerWidth, 1) : $.clamp(Math.floor(this.font.main.Size / 7), 2, 10);
-		this.sbar.narrowWidth = ppt.narrowSbarWidth == 0 ? this.sz.sideMarker : ppt.narrowSbarWidth;
+		this.sz.sideMarker = ppt.sideMarkerWidth ? Math.max(ppt.sideMarkerWidth, 1) : 4 * this.l.w;
+		this.sbar.narrowWidth = ppt.narrowSbarWidth == 0 ? $.clamp(Math.floor(this.font.zoomSize / 7), 2, 10) : ppt.narrowSbarWidth;
 
 		if (ppt.custAlbumArtGrpFontUse && ppt.custAlbumArtGrpFont.length) {
 			const custFont = $.split(ppt.custAlbumArtGrpFont, 1);
@@ -488,9 +523,10 @@ class UserInterface {
 		
 		if (ppt.custAlbumArtDurFontUse && ppt.custAlbumArtDurFont.length) {
 			const custFont = $.split(ppt.custAlbumArtDurFont, 1);
-			this.font.duration = gdi.Font(custFont[0], this.font.main.Size, Math.round($.value(custFont[1], 2, 0)));
-		} else this.font.duration = gdi.Font('Segoe UI Semibold', this.font.main.Size, 0);
+			this.font.statistics = gdi.Font(custFont[0], this.font.main.Size, Math.round($.value(custFont[1], 2, 0)));
+		} else this.font.statistics = gdi.Font('Segoe UI Semibold', this.font.main.Size, 0);
 
+		if (init) return;
 		this.calcText(true);
 	}
 
@@ -517,13 +553,13 @@ class UserInterface {
 	}
 
 	getImgFallback() {
-		if (sbar.draw_timer || !this.get) return;
+		if (sbar.draw_timer || !this.get || ppt.themed) return;
 		this.getFbImg();
 		this.get = false;
 	}
 
 	getItemColours() {
-		const lightBg = this.getSelCol(this.col.bg == 0 ? 0xff000000 : this.col.bg, true) == 50;
+		const lightBg = this.isLightBackground();
 
 		if (this.img.blurDark) {
 			this.col.txt = RGB(255, 255, 255);
@@ -531,11 +567,11 @@ class UserInterface {
 		}
 		if (this.img.blurLight) {
 			this.col.txt = RGB(50, 50, 50);
-			this.col.txt_h = RGB(71, 129, 183);
+			this.col.txt_h = ppt.themed && (ppt.theme == 1 || ppt.theme == 2) ? RGB(25, 25, 25) : RGB(71, 129, 183);
 		}
 
 		if (this.col.text === '') this.col.text = this.img.blurBlend ? this.setBrightness(this.col.txt, lightBg ? -10 : 10) : this.col.txt;
-		if (this.col.text_h === '') this.col.text_h = this.img.blurBlend ? this.setBrightness(this.col.txt_h, lightBg ? -10 : 10) : this.col.txt_h;
+		if (this.col.text_h === '') this.col.text_h = ppt.themed && ppt.theme == 9 ? RGB(104, 225, 255) : this.img.blurBlend ? this.setBrightness(this.col.txt_h, lightBg ? -10 : 10) : this.col.txt_h;
 
 		this.col.bg3 = lightBg ? 0x10000000 : 0x10ffffff;
 		this.col.bg4 = lightBg ? 0x1f000000 : 0x1fffffff;
@@ -547,7 +583,7 @@ class UserInterface {
 			this.col.text_h = this.col.text;
 			this.col.text = colH;
 		}
-		if (this.col.nowp === '') this.col.nowp = !this.img.blurDark ? this.col.text_h : RGB(128, 228, 27);
+		if (this.col.nowp === '') this.col.nowp = !this.img.blurDark ? this.col.text_h : ppt.themed && ppt.theme == 9 ? RGB(104, 225, 255) : RGB(128, 228, 27);
 
 		if (this.col.bg_h === '') {
 			this.col.bg_h = ppt.highLightRow > 2 ? (this.img.blurDark ? 0x24000000 : 0x1E30AFED) : this.img.blurDark ? 0x19ffffff : this.img.blurLight || lightBg ? 0x19000000 : 0x19ffffff;
@@ -560,7 +596,7 @@ class UserInterface {
 
 		if (this.col.bgSelframe === '') {
 			const bgSelOpaque = $.RGBAtoRGB(this.col.bgSel, this.img.blurDark ? RGB(50, 50, 50) : this.img.blurLight ? RGB(232, 232, 232) : this.col.bg);
-			this.col.bgSelframe = this.setBrightness(bgSelOpaque, this.getSelCol(bgSelOpaque == 0 ? 0xff000000 : bgSelOpaque, true) == 50 ? -7 : 7);
+			this.col.bgSelframe = this.setBrightness(bgSelOpaque, this.isLightCol(bgSelOpaque == 0 ? 0xff000000 : bgSelOpaque) ? -7 : 7);
 			this.col.frameImgSel = this.col.bgSel & 0xb0ffffff;
 		} else {
 			this.col.frameImgSel = this.col.bgSelframe;
@@ -577,12 +613,16 @@ class UserInterface {
 		this.col.imgBgSel = this.col.bgSel & 0xb0ffffff;
 		this.col.imgOverlaySel = $.RGBtoRGBA(this.col.bg, 175);
 		if (this.col.sideMarker === '') this.col.sideMarker = ppt.highLightNode ? this.col.text_h : this.col.text;
-		this.col.count = this.setBrightness(this.col.text, this.getSelCol(this.col.text, true) == 50 ? -30 : 30);
+		this.col.count = this.setBrightness(this.col.text, this.isLightCol(this.col.text) ? -30 : 30);
 
-		if (this.col.line === '') this.col.line = ppt.nodeLines ? RGBA(136, 136, 136, 85) : 0;
+		if (this.col.line === '') this.col.line = ppt.nodeLines && !ppt.facetView ? RGBA(136, 136, 136, 85) : 0;
 		if (this.col.search === '') this.col.search = this.col.text;
-		if (!this.dui && this.col.textSel === '') this.col.textSel = !this.img.blurDark && !this.img.blurLight ? window.GetColourCUI(1) : this.col.text;
-		if (this.col.textSel === '') this.col.textSel = !this.img.blurDark && !this.img.blurLight ? this.getSelCol(this.col.bgSel, false) : this.col.text;
+		if (!this.dui && this.col.textSel === '') {
+			const colours = Object.keys(colourSelector);
+			this.themeColour = colours.length ? colourSelector[colours[ppt.themeColour]] : null;
+			this.col.textSel = !this.img.blurDark && !this.img.blurLight ? (this.themeColour ? this.getSelTextCol(this.col.bgSel) : window.GetColourCUI(1)) : this.col.text;
+		}
+		if (this.col.textSel === '') this.col.textSel = !this.img.blurDark && !this.img.blurLight ? this.getSelTextCol(this.col.bgSel) : this.col.text;
 
 		this.col.imgBor = this.col.text & 0x25ffffff;
 		this.col.lotBlend = !this.img.blurDark && !this.img.blurLight ? this.getBlend(this.col.text, this.col.bg == 0 ? 0xff000000 : this.col.bg, 0.75) : this.col.text;
@@ -591,12 +631,20 @@ class UserInterface {
 
 
 		if (this.col.txt_box === '') {
-			this.col.txt_box = this.getTxtBoxCol(this.col.bg, false);
+			this.col.txt_box = !this.img.blurDark ? this.getTxtBoxCol(this.col.bg, false) : $.RGBtoRGBA(this.col.text, 192);
 			this.col.txt_box_h = this.getTxtBoxCol(this.col.bg, true);
 		} else {
 			this.col.txt_box_h = this.setBrightness(this.col.txt_box, 33);
 		}
-		if (this.col.s_line === '') this.col.s_line = RGBA(136, 136, 136, 85);
+		if (this.col.s_line === '') {
+			if (!ppt.colLineDark) this.col.s_line = !this.img.blurDark ? RGBA(136, 136, 136, 85) : $.RGBtoRGBA(this.col.text, 36);
+			else {
+				const lightBg = this.isLightBackground();
+				const nearBlack = ((ppt.theme == 1 || ppt.theme == 2) && !this.col.themeLight || (ppt.theme == 0 || ppt.theme == 6 || ppt.theme == 7) && !lightBg) && this.getColSat(this.col.bg) < 45;
+				const alpha = !lightBg ? nearBlack ? 0x20ffffff : 0x50000000 : 0x30000000;
+				this.col.s_line = this.col.text & alpha;	
+			}
+		}
 		if (window.IsTransparent && this.col.bgTrans) {
 			this.style.bg = true;
 			this.col.bg = this.col.bgTrans;
@@ -605,13 +653,13 @@ class UserInterface {
 			this.style.bg = true;
 			if (this.getColSat(this.col.bg) > 759) this.col.bg2 = 0x06000000;
 		}
-		this.col.t = this.style.bg ? this.getSelCol(this.col.bg, true) : 200;
+		this.col.t = this.style.bg ? this.getButCol(this.col.bg) : 200;
 		this.col.topBarUnderlay = this.col.bg;
 
 		if (this.id.local) {
 			this.col.topBarUnderlay = this.getAlpha(c_b1) != 255 ? RGB(25, 28, 30) : c_b1;
-			this.col.text = this.col.lotBlend = this.img.blurBlend ? this.setBrightness(c_textcol, this.getSelCol(this.col.bg == 0 ? 0xff000000 : this.col.bg, true) == 50 ? -10 : 10) : this.img.blurDark ? RGB(255, 255, 255) : this.img.blurLight ? RGB(50, 50, 50) : c_textcol;
-			this.col.text_h = this.img.blurBlend ? this.setBrightness(c_textcol_h, this.getSelCol(this.col.bg == 0 ? 0xff000000 : this.col.bg, true) == 50 ? -10 : 10) : this.img.blurDark ? RGB(255, 255, 255) : this.img.blurLight ? RGB(50, 50, 50) : c_textcol_h;
+			this.col.text = this.col.lotBlend = this.img.blurBlend ? this.setBrightness(c_textcol, this.isLightCol(this.col.bg == 0 ? 0xff000000 : this.col.bg) ? -10 : 10) : this.img.blurDark ? RGB(255, 255, 255) : this.img.blurLight ? RGB(50, 50, 50) : c_textcol;
+			this.col.text_h = this.img.blurBlend ? this.setBrightness(c_textcol_h, this.isLightCol(this.col.bg == 0 ? 0xff000000 : this.col.bg) ? -10 : 10) : this.img.blurDark ? RGB(255, 255, 255) : this.img.blurLight ? RGB(50, 50, 50) : c_textcol_h;
 			this.col.textSel = this.col.selBlend = c_textselcol;
 			this.col.bgSel = c_backcolsel;
 			ppt.rowStripes = c_alternate;
@@ -626,7 +674,7 @@ class UserInterface {
 				this.col.bgSel_h = this.getBlend(this.col.bg == 0 ? 0xff000000 : this.col.bg, this.col.bgSel, 0.25);
 			}
 			this.col.sideMarker = this.col.text_h;
-			this.col.count = this.setBrightness(this.col.text, this.getSelCol(this.col.text, true) == 50 ? -30 : 30);
+			this.col.count = this.setBrightness(this.col.text, this.isLightCol(this.col.text) ? -30 : 30);
 			this.col.bg1 = c_b1;
 			this.col.bg2 = c_b2;
 		}
@@ -640,8 +688,17 @@ class UserInterface {
 		this.col.txtArr = [this.col.text, this.col.text_h, this.col.textSel];
 	}
 
+	getLuminance(c, bypass) {
+		if (!bypass) c = $.toRGB(c);
+		const cc = c.map(v => {
+			v /= 255;
+			return v <= 0.04045 ? v /= 12.92 : Math.pow(((v + 0.055) / 1.055), 2.4);
+		});
+		return 0.2126 * cc[0] + 0.7152 * cc[1] + 0.0722 * cc[2];
+	}
+
 	getOpaque() {
-		return ppt.fullLineSelection && (ppt.highLightRow > 2 || ppt.sbarShow == 1) || !this.style.bg || this.img.isBlur || ui.img.bg ? false : true;
+		return ppt.fullLineSelection && (ppt.highLightRow > 2 || ppt.sbarShow == 1) || !this.style.bg || this.img.isBlur || this.img.bg ? false : true;
 	}
 
 	getRandomCol() {
@@ -650,19 +707,10 @@ class UserInterface {
 		};
 		let c = [rc(), rc(), rc()];
 		while (!this.isColOk(c)) c = [rc(), rc(), rc()];
-		return $.RGBAtoRGB(RGBA(c[0], c[1], c[2], Math.min(80 / ui.img.blurAlpha, 255)), RGB(0, 0, 0));
+		return $.RGBAtoRGB(RGBA(c[0], c[1], c[2], Math.min(80 / this.img.blurAlpha, 255)), RGB(0, 0, 0));
 	}
-
-	getSelCol(c, n, value, bypass) {
-		if (!bypass) c = $.toRGB(c);
-		const cc = c.map(v => {
-			v /= 255;
-			return v <= 0.03928 ? v /= 12.92 : Math.pow(((v + 0.055) / 1.055), 2.4);
-		});
-		const L = 0.2126 * cc[0] + 0.7152 * cc[1] + 0.0722 * cc[2];
-		if (value) return L;
-		if (L > 0.31) return n ? 50 : RGB(0, 0, 0);
-		else return n ? 200 : RGB(255, 255, 255);
+	getSelTextCol(c, bypass) {
+		return this.getLuminance(c, bypass) > 0.35 ? RGB(0, 0, 0) : RGB(255, 255, 255);
 	}
 
 	getTxtBoxCol(c, highLight) {
@@ -672,19 +720,28 @@ class UserInterface {
 	}
 
 	getUIColours() {
-		switch (this.dui) {
-			case 0:
-				if (this.col.bg === '') this.col.bg = window.GetColourCUI(3);
-				if (this.col.bgSel === '') this.col.bgSel = this.img.blurDark ? RGBA(255, 255, 255, 36) : this.img.blurLight ? RGBA(50, 50, 50, 36) : window.GetColourCUI(4);
-				this.col.txt = window.GetColourCUI(0);
-				this.col.txt_h = window.GetColourCUI(2);
-				break;
-			case 1:
-				if (this.col.bg === '') this.col.bg = window.GetColourDUI(1);
-				if (this.col.bgSel === '') this.col.bgSel = this.img.blurDark ? RGBA(255, 255, 255, 36) : this.img.blurLight ? RGBA(50, 50, 50, 36) : window.GetColourDUI(3);
-				this.col.txt = window.GetColourDUI(0);
-				this.col.txt_h = window.GetColourDUI(2);
-				break;
+		const colours = Object.keys(colourSelector);
+		this.themeColour = ppt.themeColour && colours.length ? colourSelector[colours[ppt.themeColour]] : null;
+		if (ppt.themed && (ppt.theme == 0 || ppt.theme == 6 || ppt.theme == 7) && this.themeColour && ppt.themeColour) {
+			this.col.txt = this.themeColour.text;
+			if (this.col.bg === '') this.col.bg = this.themeColour.background;
+			if (this.col.bgSel === '') this.col.bgSel = this.img.blurDark ? RGBA(255, 255, 255, 36) : this.img.blurLight ? RGBA(50, 50, 50, 36) : this.themeColour.selection;
+			this.col.txt_h = this.themeColour.highlight;
+		} else {
+			switch (this.dui) {
+				case 0:
+					if (this.col.bg === '') this.col.bg = this.img.blurLight ? RGB(245, 247, 255) : window.GetColourCUI(3);
+					if (this.col.bgSel === '') this.col.bgSel = this.img.blurDark ? RGBA(255, 255, 255, 36) : this.img.blurLight ? RGBA(50, 50, 50, 36) : window.GetColourCUI(4);
+					this.col.txt = window.GetColourCUI(0);
+					this.col.txt_h = window.GetColourCUI(2);
+					break;
+				case 1:
+					if (this.col.bg === '') this.col.bg = this.img.blurLight ? RGB(245, 247, 255) : window.GetColourDUI(1);
+					if (this.col.bgSel === '') this.col.bgSel = this.img.blurDark ? RGBA(255, 255, 255, 36) : this.img.blurLight ? RGBA(50, 50, 50, 36) : window.GetColourDUI(3);
+					this.col.txt = window.GetColourDUI(0);
+					this.col.txt_h = window.GetColourDUI(2);
+					break;
+			}
 		}
 	}
 
@@ -721,7 +778,22 @@ class UserInterface {
 			freqTot += v.freq;
 		});
 		const avgCol = [$.clamp(Math.round(Math.sqrt(rTot / freqTot)), 0, 255), $.clamp(Math.round(Math.sqrt(gTot / freqTot)), 0, 255), $.clamp(Math.round(Math.sqrt(bTot / freqTot)), 0, 255)];
-		return this.getSelCol(avgCol, true, true) == 50 ? true : false;
+		return this.isLightCol(avgCol, true) ? true : false;
+	}
+
+	isLightBackground() {
+		let isLightBg = this.isLightCol(this.col.bg == 0 ? 0xff000000 : this.col.bg);
+		if (ppt.themed && (ppt.theme == 0 || ppt.theme == 6 || ppt.theme == 7) && this.themeColour && ppt.themeColour) {
+			// do nothing
+		} else {
+			if (this.img.blurLight) isLightBg = true;
+			else if (this.img.blurDark) isLightBg = false;
+		}
+		return isLightBg;
+	}
+
+	isLightCol(c, bypass) {
+		return this.getLuminance(c, bypass) > 0.35;
 	}
 
 	on_get_album_art_done(handle, image, image_path) {
@@ -737,7 +809,7 @@ class UserInterface {
 	}
 
 	on_playback_new_track(handle) {
-		if (!this.img.isBlur && !ui.img.bg) return;
+		if (!this.img.isBlur && !this.img.bg || ppt.themed) return;
 		if (this.block()) this.get = true;
 		else {
 			this.getFbImg(handle);
@@ -753,7 +825,7 @@ class UserInterface {
 	setIconCol() {
 		const colBg = this.img.blurDark ? RGB(0, 0, 0) : this.img.blurLight ? RGB(255, 255, 255) : this.col.bg == 0 ? 0xff000000 : this.col.bg
 		if (this.icon.col_c === '') {
-			this.col.icon_c = this.style.squareNode ? [RGB(252, 252, 252), RGB(223, 223, 223)] : (ppt.nodeStyle == 1 || ppt.nodeStyle == 3 ? (this.img.blurDark || this.img.blurBlend ? this.getBlend(colBg, this.col.text, 0.3) : this.getBlend(colBg, this.col.text, 0.5)) : this.col.text);
+			this.col.icon_c = this.style.squareNode ? [RGB(252, 252, 252), RGB(223, 223, 223)] : (ppt.nodeStyle == 1 || ppt.nodeStyle == 3 ? (this.img.blurDark || this.img.blurBlend || this.img.blurLight ? $.RGBtoRGBA(this.col.text, 72) : this.getBlend(colBg, this.col.text, 0.5)) : this.col.text);
 		} else if (this.style.squareNode) {
 			if (this.getAlpha(this.icon.col_c) != 255) {
 				this.col.icon_c = $.RGBAtoRGB(this.icon.col_c, this.col.bg);
@@ -768,9 +840,9 @@ class UserInterface {
 			} else this.col.icon_e = this.icon.col_e;
 			this.col.icon_e = this.getGradient(this.col.icon_e, 15, -14);
 		}
-		this.col.iconPlus = this.getSelCol(this.col.icon_e[0], true) == 50 ? RGB(41, 66, 114) : RGB(225, 225, 245);
-		this.col.iconMinus_c = this.getSelCol(this.col.icon_c[0], true) == 50 ? RGB(75, 99, 167) : RGB(225, 225, 245);
-		this.col.iconMinus_e = this.getSelCol(this.col.icon_e[0], true) == 50 ? RGB(75, 99, 167) : RGB(225, 225, 245);
+		this.col.iconPlus = this.isLightCol(this.col.icon_e[0]) ? RGB(41, 66, 114) : RGB(225, 225, 245);
+		this.col.iconMinus_c = this.isLightCol(this.col.icon_c[0]) ? RGB(75, 99, 167) : RGB(225, 225, 245);
+		this.col.iconMinus_e = this.isLightCol(this.col.icon_e[0]) ? RGB(75, 99, 167) : RGB(225, 225, 245);
 		if (!ppt.highLightNode) return;
 		if (this.icon.col_h === '') {
 			const nodeDiffHighlight = this.img.blurDark && !ppt.highLightRow && ppt.highLightNode;
@@ -783,8 +855,8 @@ class UserInterface {
 			} else if (this.icon.col_h !== '') this.col.icon_h = this.icon.col_h;
 			this.col.icon_h = this.getGradient(this.col.icon_h, 15, -14);
 		}
-		this.col.iconPlus_h = this.getSelCol(this.col.icon_h[0], true) == 50 ? RGB(41, 66, 114) : RGB(225, 225, 245);
-		this.col.iconMinus_h = this.getSelCol(this.col.icon_h[0], true) == 50 ? RGB(75, 99, 167) : RGB(225, 225, 245);
+		this.col.iconPlus_h = this.isLightCol(this.col.icon_h[0]) ? RGB(41, 66, 114) : RGB(225, 225, 245);
+		this.col.iconMinus_h = this.isLightCol(this.col.icon_h[0]) ? RGB(75, 99, 167) : RGB(225, 225, 245);
 	}
 
 	setMarkerCol(c) {
@@ -974,12 +1046,13 @@ class UserInterface {
 		this.font.main = gdi.Font(fnm, this.font.zoomSize, fst);
 		this.font.search = gdi.Font(fnm, this.font.zoomSize, 0);
 		this.font.find = gdi.Font(fnm, this.font.zoomSize * 1.5, 1);
-		this.font.small = gdi.Font(fnm, Math.round(this.font.zoomSize * 12 / 14), fst);
+		this.font.label = gdi.Font(fnm, !ppt.treeAutoExpand || ppt.libSource != 2 ? Math.round(this.font.zoomSize * 11 / 14) : this.font.zoomSize, fst);
+		this.font.small = gdi.Font(fnm, !ppt.treeAutoExpand || ppt.libSource != 2 ? Math.round(this.font.zoomSize * 12 / 14) : this.font.zoomSize, fst);
 		this.font.tracks = gdi.Font('Arial', Math.round(this.font.zoomSize * 12 / 14), 2);
-		this.sz.sideMarker = $.clamp(Math.floor(this.font.zoomSize / 7), 2, 10);
-		this.sbar.narrowWidth = ppt.narrowSbarWidth == 0 ? this.sz.sideMarker : ppt.narrowSbarWidth;
+		this.sbar.narrowWidth = ppt.narrowSbarWidth == 0 ? $.clamp(Math.floor(this.font.zoomSize / 7), 2, 10) : ppt.narrowSbarWidth;
 		this.font.group = gdi.Font(this.font.group.Name, this.font.zoomSize, this.font.group.Style);
 		this.font.lot = gdi.Font(this.font.lot.Name, this.font.zoomSize, this.font.lot.Style);
+		this.font.statistics = gdi.Font(this.font.statistics.Name, this.font.zoomSize, this.font.statistics.Style);
 
 		this.calcText(true);
 		panel.on_size();
@@ -996,6 +1069,8 @@ class Vkeys {
 	constructor() {
 		this.selAll = 1;
 		this.copy = 3;
+		this.ctrl = 17;
+		this.ctrlBackspace = 127;
 		this.eFocusSearch = 5;
 		this.back = 8;
 		this.insert = 9;
@@ -1037,5 +1112,10 @@ class Vkeys {
 		}
 	}
 }
+
+let colourSelector = {}
+let sync = {image: () => {}}
+const syncer = fb.ProfilePath + 'settings\\themed\\libraryTreeSyncTheme.js';
+if (ppt.themed && $.file(syncer)) include(syncer);
 
 (function(root,pluralize){root.pluralize=pluralize()})(this,function(){var pluralRules=[];var singularRules=[];var uncountables={};var irregularPlurals={};var irregularSingles={};function sanitizeRule(rule){if(typeof rule==='string'){return new RegExp('^'+rule+'$','i')}return rule}function restoreCase(word,token){if(word===token)return token;if(word===word.toLowerCase())return token.toLowerCase();if(word===word.toUpperCase())return token.toUpperCase();if(word[0]===word[0].toUpperCase()){return token.charAt(0).toUpperCase()+token.substr(1).toLowerCase()}return token.toLowerCase()}function interpolate(str,args){return str.replace(/\$(\d{1,2})/g,function(match,index){return args[index]||''})}function replace(word,rule){return word.replace(rule[0],function(match,index){var result=interpolate(rule[1],arguments);if(match===''){return restoreCase(word[index-1],result)}return restoreCase(match,result)})}function sanitizeWord(token,word,rules){if(!token.length||$.objHasOwnProperty(uncountables, token)){return word}var len=rules.length;while(len--){var rule=rules[len];if(rule[0].test(word))return replace(word,rule)}return word}function replaceWord(replaceMap,keepMap,rules){return function(word){var token=word.toLowerCase();if($.objHasOwnProperty(keepMap, token)){return restoreCase(word,token)}if($.objHasOwnProperty(replaceMap, token)){return restoreCase(word,replaceMap[token])}return sanitizeWord(token,word,rules)}}function checkWord(replaceMap,keepMap,rules){return function(word){var token=word.toLowerCase();if($.objHasOwnProperty(keepMap, token))return true;if($.objHasOwnProperty(replaceMap, token))return false;return sanitizeWord(token,token,rules)===token}}function pluralize(word,count,inclusive){if (word.length < 2) return word;var pluralized=count===1?pluralize.singular(word):pluralize.plural(word);return(inclusive?count+' ':'')+pluralized}pluralize.plural=replaceWord(irregularSingles,irregularPlurals,pluralRules);pluralize.isPlural=checkWord(irregularSingles,irregularPlurals,pluralRules);pluralize.singular=replaceWord(irregularPlurals,irregularSingles,singularRules);pluralize.isSingular=checkWord(irregularPlurals,irregularSingles,singularRules);pluralize.addPluralRule=function(rule,replacement){pluralRules.push([sanitizeRule(rule),replacement])};pluralize.addSingularRule=function(rule,replacement){singularRules.push([sanitizeRule(rule),replacement])};pluralize.addUncountableRule=function(word){if(typeof word==='string'){uncountables[word.toLowerCase()]=true;return}pluralize.addPluralRule(word,'$0');pluralize.addSingularRule(word,'$0')};pluralize.addIrregularRule=function(single,plural){plural=plural.toLowerCase();single=single.toLowerCase();irregularSingles[single]=plural;irregularPlurals[plural]=single};[['I','we'],['me','us'],['he','they'],['she','they'],['them','them'],['myself','ourselves'],['yourself','yourselves'],['itself','themselves'],['herself','themselves'],['himself','themselves'],['themself','themselves'],['is','are'],['was','were'],['has','have'],['this','these'],['that','those'],['echo','echoes'],['dingo','dingoes'],['volcano','volcanoes'],['tornado','tornadoes'],['torpedo','torpedoes'],['genus','genera'],['viscus','viscera'],['stigma','stigmata'],['stoma','stomata'],['dogma','dogmata'],['lemma','lemmata'],['schema','schemata'],['anathema','anathemata'],['ox','oxen'],['axe','axes'],['die','dice'],['yes','yeses'],['foot','feet'],['eave','eaves'],['goose','geese'],['tooth','teeth'],['quiz','quizzes'],['human','humans'],['proof','proofs'],['carve','carves'],['valve','valves'],['looey','looies'],['thief','thieves'],['groove','grooves'],['pickaxe','pickaxes'],['passerby','passersby']].forEach(function(rule){return pluralize.addIrregularRule(rule[0],rule[1])});[[/s?$/i,'s'],[/[^\u0000-\u007F]$/i,'$0'],[/([^aeiou]ese)$/i,'$1'],[/(ax|test)is$/i,'$1es'],[/(alias|[^aou]us|t[lm]as|gas|ris)$/i,'$1es'],[/(e[mn]u)s?$/i,'$1s'],[/([^l]ias|[aeiou]las|[ejzr]as|[iu]am)$/i,'$1'],[/(alumn|syllab|vir|radi|nucle|fung|cact|stimul|termin|bacill|foc|uter|loc|strat)(?:us|i)$/i,'$1i'],[/(alumn|alg|vertebr)(?:a|ae)$/i,'$1ae'],[/(seraph|cherub)(?:im)?$/i,'$1im'],[/(her|at|gr)o$/i,'$1oes'],[/(agend|addend|millenni|dat|extrem|bacteri|desiderat|strat|candelabr|errat|ov|symposi|curricul|automat|quor)(?:a|um)$/i,'$1a'],[/(apheli|hyperbat|periheli|asyndet|noumen|phenomen|criteri|organ|prolegomen|hedr|automat)(?:a|on)$/i,'$1a'],[/sis$/i,'ses'],[/(?:(kni|wi|li)fe|(ar|l|ea|eo|oa|hoo)f)$/i,'$1$2ves'],[/([^aeiouy]|qu)y$/i,'$1ies'],[/([^ch][ieo][ln])ey$/i,'$1ies'],[/(x|ch|ss|sh|zz)$/i,'$1es'],[/(matr|cod|mur|sil|vert|ind|append)(?:ix|ex)$/i,'$1ices'],[/\b((?:tit)?m|l)(?:ice|ouse)$/i,'$1ice'],[/(pe)(?:rson|ople)$/i,'$1ople'],[/(child)(?:ren)?$/i,'$1ren'],[/eaux$/i,'$0'],[/m[ae]n$/i,'men'],['thou','you']].forEach(function(rule){return pluralize.addPluralRule(rule[0],rule[1])});[[/s$/i,''],[/(ss)$/i,'$1'],[/(wi|kni|(?:after|half|high|low|mid|non|night|[^\w]|^)li)ves$/i,'$1fe'],[/(ar|(?:wo|[ae])l|[eo][ao])ves$/i,'$1f'],[/ies$/i,'y'],[/\b([pl]|zomb|(?:neck|cross)?t|coll|faer|food|gen|goon|group|lass|talk|goal|cut)ies$/i,'$1ie'],[/\b(mon|smil)ies$/i,'$1ey'],[/\b((?:tit)?m|l)ice$/i,'$1ouse'],[/(seraph|cherub)im$/i,'$1'],[/(x|ch|ss|sh|zz|tto|go|cho|alias|[^aou]us|t[lm]as|gas|(?:her|at|gr)o|[aeiou]ris)(?:es)?$/i,'$1'],[/(analy|diagno|parenthe|progno|synop|the|empha|cri|ne)(?:sis|ses)$/i,'$1sis'],[/(movie|twelve|abuse|e[mn]u)s$/i,'$1'],[/(test)(?:is|es)$/i,'$1is'],[/(alumn|syllab|vir|radi|nucle|fung|cact|stimul|termin|bacill|foc|uter|loc|strat)(?:us|i)$/i,'$1us'],[/(agend|addend|millenni|dat|extrem|bacteri|desiderat|strat|candelabr|errat|ov|symposi|curricul|quor)a$/i,'$1um'],[/(apheli|hyperbat|periheli|asyndet|noumen|phenomen|criteri|organ|prolegomen|hedr|automat)a$/i,'$1on'],[/(alumn|alg|vertebr)ae$/i,'$1a'],[/(cod|mur|sil|vert|ind)ices$/i,'$1ex'],[/(matr|append)ices$/i,'$1ix'],[/(pe)(rson|ople)$/i,'$1rson'],[/(child)ren$/i,'$1'],[/(eau)x?$/i,'$1'],[/men$/i,'man']].forEach(function(rule){return pluralize.addSingularRule(rule[0],rule[1])});['a','an','and','as','at','but','by','en','for','if','in','nor','of','on','or','per','the','to','vs','via','adulthood','advice','agenda','aid','aircraft','alcohol','allmusic','ammo','analytics','anime','athletics','audio','bison','blood','bream','buffalo','butter','carp','cash','chassis','chess','clothing','cod','commerce','cooperation','corps','debris','diabetes','digestion','elk','energy','equipment','excretion','expertise','firmware','flounder','folder','fun','gallows','garbage','graffiti','hardware','headquarters','health','herpes','highjinks','homework','housework','information','jeans','justice','kudos','labour','lastfm','last.fm','listener','literature','machinery','mackerel','mail','media','mews','moose','music','mud','manga','news','only','personnel','pike','plankton','playcount','pliers','police','pollution','premises','rain','research','rice','salmon','scissors','series','sewage','shambles','shrimp','similar','software','species','staff','swine','tennis','traffic','transportation','trout','tuna','wealth','welfare','whiting','wildebeest','wildlife','wikipedia','you',/pok[eé]mon$/i,/[^aeiou]ese$/i,/deer$/i,/fish$/i,/measles$/i,/o[iu]s$/i,/pox$/i,/sheep$/i].forEach(pluralize.addUncountableRule);return pluralize});

@@ -14,14 +14,6 @@ class Timers {
 		timer.id = null;
 	}
 
-	lib() {
-		setTimeout(() => {
-			if ((ui.w < 1 || !window.IsVisible) && ppt.rememberTree) lib.init = true;
-			lib.getLibrary(true);
-			lib.rootNodes(ppt.rememberTree, ppt.process);
-		}, 0);
-	}
-
 	searchCursor(clear) {
 		if (clear) this.clear(this.cursor);
 		if (!panel.search.cursor) panel.search.cursor = true;

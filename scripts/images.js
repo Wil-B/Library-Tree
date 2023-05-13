@@ -18,6 +18,8 @@ class Images {
 		this.preLoadItems = [];
 		this.rootNo = 4;
 		this.saveSize = 250;
+		this.shadow = null;
+		this.shadowStub = null;
 		this.start = 0;
 		this.toSave = [];
 		this.zooming = false;
@@ -63,9 +65,10 @@ class Images {
 			preLoad: 7
 		}
 
-		this.labels = {duration: ppt.itemShowDuration ? 1 : 0}
+		this.labels = {statistics: ppt.itemShowStatistics ? 1 : 0}
 
 		this.letter = {
+			albumArtYearAuto: ppt.albumArtYearAuto,
 			no: 1,
 			show: ppt.albumArtLetter,
 			w: 0
@@ -120,13 +123,6 @@ class Images {
 		this.setRoot();
 		this.setNoArtist();
 		this.setNoCover();
-	}
-
-	* range(start, end, step) {
-		while (start < end) {
-			yield start;
-			start += step;
-		}
 	}
 
 	// Methods
@@ -280,9 +276,8 @@ class Images {
 			if (tt2) tt2 = tt2.replace(/@!#.*?@!#/g, '');
 		}
 		let text = tt1 ? tt1 : '';
-		if (tt2 && (panel.lines == 2 || panel.lines == 1 && this.labels.duration)) text += '\n' + tt2;
-		if (tt3 && this.labels.duration) text += '\n' + tt3;
-		text = text.replace(/&/g, '&&');
+		if (tt2 && (panel.lines == 2 || panel.lines == 1 && this.labels.statistics)) text += '\n' + tt2;
+		if (tt3 && this.labels.statistics) text += '\n' + tt3;
 		item.tt = {
 			text: text,
 			x: x,
@@ -307,32 +302,6 @@ class Images {
 			min: 20
 		};
 		this.items = [];
-	}
-
-	createCacheFolder() {
-		this.albumArtDiskCache = ppt.albumArtDiskCache;
-		if (!this.albumArtDiskCache) return;
-		const cacheFolder = this.cacheFolder;
-		$.buildPth(this.cachePath);
-		this.saveSize = this.im.w > 500 ? 750 : this.im.w > 250 ? 500 : 250;
-		this.interval = {
-			cache: this.saveSize == 250 ? 1 : this.saveSize == 500 ? 4 : 9,
-			preLoad: this.saveSize == 250 ? (ppt.albumArtLabelType != 3 ? 7 : 15) : this.saveSize == 500 ? 20 : 45
-		}
-		this.cacheFolder = this.cachePath + ['front', 'back', 'disc', 'icon', 'artist'][ppt.artId] + (this.saveSize == 250 ? '' : this.saveSize) + '\\';
-		$.create(this.cacheFolder);
-		this.database = $.jsonParse(this.cacheFolder + 'database.dat', this.newDatabase(), 'file');
-		if (this.cacheFolder != cacheFolder) {
-			this.preLoadItems = [];
-			clearInterval(this.timer.preLoad);
-			this.timer.preLoad = null;
-			this.items = [];
-			clearInterval(this.timer.load);
-			this.timer.load = null;
-			this.toSave = [];
-			clearInterval(this.timer.save);
-			this.timer.save = null;
-		}
 	}
 
 	createCollage(g, cellWidth, cellHeight, rows, columns, cells) {
@@ -413,15 +382,17 @@ class Images {
 			box_y = this.style.vertical ? Math.floor(this.panel.y + row * this.row.h - sbar.delta) : this.style.y;
 			if (box_y >= 0 - this.row.h && box_y < this.panel.y + this.panel.h) {
 				const item = pop.tree[i];
+				pop.getItemCount(item);
 				const grp = item.grp;
 				const lot = item.lot;
-				const duration = this.labels.duration ? (!item.root && this.labels.counts ? item.count + ' | ' : '') + item._duration : '';
+				const statistics = this.labels.statistics ? (!item.root && this.labels.counts ? item.count + (item.count && item._statistics ? ' | ' : '') : '') + item._statistics : '';
 				const cur_img = !this.zooming ? this.getImg(item.key) : null;
 				const nowp = this.checkNowPlaying(item);
 				const grpCol = this.getGrpCol(item, nowp, pop.highlight.text && i == pop.m.i);
 				const lotCol = this.getLotCol(item, nowp, pop.highlight.text && i == pop.m.i);
 				this.drawSelBg(gr, cur_img, box_x, box_y, i, nowp || item.sel);
 				this.im.y = this.im.offset + box_y;
+				
 				if (pop.rowStripes && this.labels.right) {
 					if (i % 2 == 0) gr.FillSolidRect(0, box_y + 1, panel.tree.stripe.w, this.row.h, ui.col.bg1);
 					else gr.FillSolidRect(0, box_y, panel.tree.stripe.w, this.row.h, ui.col.bg2);
@@ -437,11 +408,18 @@ class Images {
 					y1 = this.im.y + 2 + this.im.w - ih;
 					let w = iw;
 					let h = ih;
-					if (item.sel && this.labels.overlay && this.style.image == 2) {
-						x1 += 2;
-						y1 += 2;
-						w -= 4;
-						h -= 4;
+					if (this.style.dropShadow && this.shadow) {
+						this.style.image ? gr.DrawImage(this.shadow, x1, y1, this.shadow.Width, this.shadow.Height, 0, 0, this.shadow.Width, this.shadow.Height) : 
+						gr.DrawImage(this.shadow, x1, y1, Math.ceil(w * 1.15), Math.ceil(h * 1.15), 0, 0, this.shadow.Width, this.shadow.Height); // disabled for blend: not suitable
+					} else if (this.style.dropGrad) {
+						if (this.style.image != 2) {
+							gr.FillGradRect(x1 + w, y1, 4 * $.scale, h,  0, RGBA(0, 0, 0, 56), 0);
+							gr.FillGradRect(x1, y1 + h, w, 4 * $.scale, 90, RGBA(0, 0, 0, 56), 0);
+						} else {
+							gr.SetSmoothingMode(4);
+							gr.DrawEllipse(x1, y1, iw, ih, 4 * $.scale, RGBA(0, 0, 0, 32));
+							gr.SetSmoothingMode(0);
+						}
 					}
 					gr.DrawImage(cur_img, x1, y1, w, h, 0, 0, iw, ih);
 					if (this.labels.overlayDark) {
@@ -450,20 +428,32 @@ class Images {
 					}
 					if (!item.sel || !this.labels.overlay || this.style.image != 2) {
 						if (this.style.image != 2) gr.DrawRect(x1, y1, iw - 1, ih - 1, 1, ui.col.imgBor);
-						else gr.DrawEllipse(x1, y1, iw - 1, ih - 1, 1, ui.col.imgBor);
+						else {
+							gr.SetSmoothingMode(2);
+							gr.DrawEllipse(x1, y1, iw - 1, ih - 1, 1, ui.col.imgBor);
+							gr.SetSmoothingMode(0);
+						}
 					}
 				} else {
 					iw = this.im.w;
 					ih = this.im.w;
 					x1 = box_x + Math.round((this.box.w - iw) / 2);
 					y1 = this.im.y + 2 + iw - ih;
-					if (item.sel && this.labels.overlay && this.style.image == 2) {
-						x1 += 2;
-						y1 += 2;
-						iw -= 4;
-						ih -= 4;
+					if (!item.root) {
+						if (this.style.dropShadowStub && this.shadowStub) {
+							gr.DrawImage(this.shadowStub, x1, y1, this.shadowStub.Width, this.shadowStub.Height, 0, 0, this.shadowStub.Width, this.shadowStub.Height);
+						} else if (this.style.dropGradStub) {
+							if (this.style.image != 2) {
+								gr.FillGradRect(x1 + iw - 2 * $.scale, y1, 6 * $.scale, ih,  0, RGBA(0, 0, 0, 56), 0);
+								gr.FillGradRect(x1, y1 + ih - 2 * $.scale, iw, 6 * $.scale, 90, RGBA(0, 0, 0, 56), 0);
+							} else {
+								gr.SetSmoothingMode(2);
+								gr.DrawEllipse(x1, y1, iw, ih, 4 * $.scale, RGBA(0, 0, 0, 32));
+								gr.SetSmoothingMode(0);
+							}	
+						}
+						this.stub.noImg && gr.DrawImage(this.stub.noImg, x1, y1, iw, ih, 0, 0, iw, ih);
 					}
-					if (!item.root) this.stub.noImg && gr.DrawImage(this.stub.noImg, x1, y1, iw, ih, 0, 0, iw, ih);
 					else if (!this.style.rootComposite && this.stub.root) gr.DrawImage(this.stub.root, x1, y1, iw, ih, 0, 0, iw, ih);
 
 					if (this.labels.overlay) {
@@ -495,28 +485,28 @@ class Images {
 						y2 = this.im.y + this.text.y2;
 						const y3 = this.im.y + this.text.y3;
 						if (panel.lines == 2) {
-							this.checkTooltip(gr, item, x, y1, y2, y3, this.text.w, grp, lot, duration, ui.font.group, ui.font.lot, ui.font.duration);
+							this.checkTooltip(gr, item, x, y1, y2, y3, this.text.w, grp, lot, statistics, ui.font.group, ui.font.lot, ui.font.statistics);
 							!panel.colMarker ? gr.GdiDrawText(grp, ui.font.group, grpCol, x, y1, this.text.w, this.text.h, this.style.image != 1 && !this.labels.right && !item.tt[1] ? panel.cc : panel.lc) : pop.cusCol(gr, grp, item, x, y1, this.text.w, this.text.h, type, nowp, ui.font.group, ui.font.groupEllipsisSpace, 'group');
 							!panel.colMarker ? gr.GdiDrawText(lot, ui.font.lot, lotCol, x, y2, this.text.w, this.text.h, this.style.image != 1 && !this.labels.right && !item.tt[2] ? panel.cc : panel.lc) : pop.cusCol(gr, lot, item, x, y2, this.text.w, this.text.h, type, nowp, ui.font.lot, ui.font.lotEllipsisSpace, 'lott');
-							if (duration) gr.GdiDrawText(duration, ui.font.duration, lotCol, x, y3, this.text.w, this.text.h, this.style.image != 1 && !this.labels.right ? panel.cc : panel.lc)
+							if (statistics) gr.GdiDrawText(statistics, ui.font.statistics, lotCol, x, y3, this.text.w, this.text.h, this.style.image != 1 && !this.labels.right && !item.tt[2] ? panel.cc : panel.lc)
 						} else {
-							this.checkTooltip(gr, item, x, y1, duration ? y2 : -1, -1, this.text.w, grp, duration, false, ui.font.main, ui.font.main);
-							!panel.colMarker ? gr.GdiDrawText(grp, ui.font.group, grpCol, x, y1, this.text.w, this.text.h, this.style.image != 1 && !this.labels.right && !item.tt[1] ? panel.cc : panel.lc) : pop.cusCol(gr, grp, item, x, y1, this.text.w, this.text.h, type, nowp, ui.font.main, ui.font.mainEllipsisSpace, 'group');
-							if (duration) gr.GdiDrawText(duration, ui.font.duration, lotCol, x, y2, this.text.w, this.text.h, this.style.image != 1 && !this.labels.right ? panel.cc : panel.lc)
+							this.checkTooltip(gr, item, x, y1, statistics ? y2 : -1, -1, this.text.w, grp, statistics, false, ui.font.group, ui.font.statistics);
+							!panel.colMarker ? gr.GdiDrawText(grp, ui.font.group, grpCol, x, y1, this.text.w, this.text.h, this.style.image != 1 && !this.labels.right && !item.tt[1] ? panel.cc : panel.lc) : pop.cusCol(gr, grp, item, x, y1, this.text.w, this.text.h, type, nowp, ui.font.group, ui.font.mainEllipsisSpace, 'group');
+							if (statistics) gr.GdiDrawText(statistics, ui.font.statistics, lotCol, x, y2, this.text.w, this.text.h, this.style.image != 1 && !this.labels.right && !item.tt[2] ? panel.cc : panel.lc)
 						}
 					} else {
 						y1 = this.im.y + this.text.y1;
-						y2 = y1 + this.text.h * (this.labels.duration ? 0.93 : 0.9);
+						y2 = y1 + this.text.h * (this.labels.statistics ? 0.93 : 0.9);
 						const y3 = y2 + this.text.h * 0.95;
 						if (panel.lines == 2) {
-							this.checkTooltip(gr, item, x, y1, y2, y3, this.text.w, grp, lot, duration, ui.font.group, ui.font.lot, ui.font.duration);
+							this.checkTooltip(gr, item, x, y1, y2, y3, this.text.w, grp, lot, statistics, ui.font.group, ui.font.lot, ui.font.statistics);
 							!panel.colMarker ? gr.GdiDrawText(grp, ui.font.group, grpCol, x, y1, this.text.w, this.text.h, this.style.image != 1 && !item.tt[1] ? panel.cc : panel.lc) : pop.cusCol(gr, grp, item, x, y1, this.text.w, this.text.h, type, nowp, ui.font.group, ui.font.groupEllipsisSpace, 'lott');
 							!panel.colMarker ? gr.GdiDrawText(lot, ui.font.lot, lotCol, x, y2, this.text.w, this.text.h, this.style.image != 1 && !item.tt[2] ? panel.cc : panel.lc) : pop.cusCol(gr, lot, item, x, y2, this.text.w, this.text.h, type, nowp, ui.font.lot, ui.font.lotEllipsisSpace, 'group');
-							if (duration) gr.GdiDrawText(duration, ui.font.duration, lotCol, x, y3, this.text.w, this.text.h, this.style.image != 1 ? panel.cc : panel.lc)
+							if (statistics) gr.GdiDrawText(statistics, ui.font.statistics, lotCol, x, y3, this.text.w, this.text.h, this.style.image != 1 && !item.tt[3] ? panel.cc : panel.lc)
 						} else {
-							this.checkTooltip(gr, item, x, y1, duration ? y2 : -1, -1, this.text.w, grp, false, false, ui.font.group, ui.font.lot, ui.font.duration);
+							this.checkTooltip(gr, item, x, y1, statistics ? y2 : -1, -1, this.text.w, grp, statistics, false, ui.font.group, ui.font.statistics);
 							!panel.colMarker ? gr.GdiDrawText(grp, ui.font.group, grpCol, x, y1, this.text.w, this.text.h, this.style.image != 1 && !item.tt[1] ? panel.cc : panel.lc) : pop.cusCol(gr, grp, item, x, y1, this.text.w, this.text.h, type, nowp, ui.font.group, ui.font.groupEllipsisSpace, 'group');
-							if (duration) gr.GdiDrawText(duration, ui.font.duration, lotCol, x, y2, this.text.w, this.text.h, this.style.image != 1 ? panel.cc : panel.lc)
+							if (statistics) gr.GdiDrawText(statistics, ui.font.statistics, lotCol, x, y2, this.text.w, this.text.h, this.style.image != 1 && !item.tt[2] ? panel.cc : panel.lc)
 						}
 					}
 				}
@@ -551,7 +541,7 @@ class Images {
 	drawImageFrame(gr, x, y, w, h, col) {
 		const l_w = 3;
 		gr.SetSmoothingMode(2);
-		if (this.style.image != 2) gr.DrawRect(x, y, w - l_w / 2, h - l_w / 2, l_w, col);
+		if (this.style.image != 2) gr.DrawRect(x + 1, y + 1, w - l_w / 2 - 1, h - l_w / 2 - 1, l_w, col);
 		else gr.DrawEllipse(x, y, w - l_w / 2, h - l_w / 2, l_w, col);
 		gr.SetSmoothingMode(0);
 	}
@@ -609,7 +599,7 @@ class Images {
 				switch (this.labels.overlay || this.labels.hide) {
 					case true:
 						x = box_x + Math.round((this.box.w - (cur_img ? cur_img.Width : this.im.w)) / 2);
-						y = box_y + (cur_img ? 2 + this.im.w - cur_img.Height : 2)
+						y = box_y + (cur_img ? this.im.w - cur_img.Height : 0);
 						w = cur_img ? cur_img.Width : this.im.w;
 						h = cur_img ? cur_img.Height : this.im.w;
 						break;
@@ -630,9 +620,9 @@ class Images {
 					h = cur_img ? cur_img.Height : this.im.w;
 				} else {
 					x = !this.labels.right ? box_x : ui.sz.pad;
-					y = box_y + (!this.labels.right ? 2 : 1);
+					y = box_y + ((this.labels.overlay || this.labels.hide) ? 0 : (!this.labels.right ? 2 : 1));
 					w = !this.labels.right ? this.box.w : panel.tree.sel.w;
-					h = this.box.h;
+					h = this.box.h + ((this.labels.overlay || this.labels.hide) ? 2 : 0);
 				}
 				break;
 		}
@@ -684,6 +674,32 @@ class Images {
 			accessed: caller == 'display' ? ++this.accessed : 0
 		}
 		else return image;
+	}
+
+	getCurrentDatabase() {
+		this.albumArtDiskCache = ppt.albumArtDiskCache;
+		if (!this.albumArtDiskCache) return;
+		const cacheFolder = this.cacheFolder;
+		$.buildPth(this.cachePath);
+		this.saveSize = this.im.w > 500 ? 750 : this.im.w > 250 ? 500 : 250;
+		this.interval = {
+			cache: this.saveSize == 250 ? 1 : this.saveSize == 500 ? 4 : 9,
+			preLoad: this.saveSize == 250 ? (ppt.albumArtLabelType != 3 ? 7 : 15) : this.saveSize == 500 ? 20 : 45
+		}
+		this.cacheFolder = this.cachePath + ['front', 'back', 'disc', 'icon', 'artist'][ppt.artId] + (this.saveSize == 250 ? '' : this.saveSize) + '\\';
+		$.create(this.cacheFolder);
+		this.database = $.jsonParse(this.cacheFolder + 'database.dat', this.newDatabase(), 'file');
+		if (this.cacheFolder != cacheFolder) {
+			this.preLoadItems = [];
+			clearInterval(this.timer.preLoad);
+			this.timer.preLoad = null;
+			this.items = [];
+			clearInterval(this.timer.load);
+			this.timer.load = null;
+			this.toSave = [];
+			clearInterval(this.timer.save);
+			this.timer.save = null;
+		}
 	}
 
 	getField(handle, name, arr) {
@@ -831,7 +847,37 @@ class Images {
 		}, {});
 		const maxCount = Math.max(...Object.values(counts));
 		const mostFrequent = Object.keys(counts).filter(k => counts[k] === maxCount);
-		return mostFrequent[0];
+		return panel.grp[ppt.viewBy].type.includes(mostFrequent[0]) ? mostFrequent[0] : '';
+	}
+
+	getShadow() {
+		const xy = this.im.w * 0.02;
+		let wh = this.style.image ? this.im.w * 0.985 : this.im.w; // draw at actual size if possible as faster; regular have to be resized during draw
+		const sz = this.im.w * 1.17;
+		if (this.style.image != 2) {
+			this.shadow = $.gr(sz, sz, true, g => g.FillSolidRect(xy, xy, wh, wh, RGBA(0, 0, 0, 128)));
+			this.shadow.StackBlur(5);
+		} else {
+			this.shadow = $.gr(sz, sz, true, g => g.FillEllipse(xy, xy, wh, wh, RGBA(0, 0, 0, 128)));
+			this.shadow.StackBlur(4);
+		}
+		wh = this.im.w * 0.985; // always drawn at actual size
+		if (ppt.artId == 4) {
+			if (ppt.curNoArtistImg == 0 || ppt.curNoArtistImg == 2 || this.style.image == 2) {
+				this.shadowStub = $.gr(sz, sz, true, g => g.FillEllipse(xy, xy, wh, wh, RGBA(0, 0, 0, 128)));
+				this.shadowStub.StackBlur(4);
+			} else if (ppt.curNoArtistImg != 4) {
+				this.shadowStub = $.gr(sz, sz, true, g => g.FillSolidRect(xy, xy, wh, wh, RGBA(0, 0, 0, 128)));
+				this.shadowStub.StackBlur(5);
+			} else {
+				this.shadowStub = null;
+			}
+		} else if (ppt.curNoCoverImg > 2) {
+			this.shadowStub = $.gr(sz, sz, true, g => g.FillSolidRect(xy, xy, wh, wh, RGBA(0, 0, 0, 128)));
+			this.shadowStub.StackBlur(5);
+		} else {
+			this.shadowStub = null;
+		}
 	}
 
 	getRootImg(key) {
@@ -865,24 +911,17 @@ class Images {
 		const fields = [];
 		const mod = pop.tree.length < 1000 ? 1 : pop.tree.length < 3500 ? Math.round(pop.tree.length / 1000) : 3;
 		const tf_d = FbTitleFormat('[$year(%date%)]');
-		const getItemCount = ppt.itemOverlayType != 1 && ppt.albumArtLabelType == 2 && !this.labels.duration && (pop.nodeCounts == 1 || pop.nodeCounts == 2);
 		this.groupField = albumArtGrpNames[`${panel.grp[ppt.viewBy].type.trim()}${panel.lines}`];
 		
 		pop.tree.forEach((v, i) => {
 			const handle = panel.list[v.item[0].start];
 			v.handle = handle;
 			const arr = pop.tree[i].name.split('^@^');
-			if (this.labels.duration) v._duration = pop.calcTotalDuration(v);
 			v.grp = panel.lines == 1 || !ppt.albumArtFlipLabels ? arr[0] : arr[1];
 			v.lot = panel.lines == 2 ? !ppt.albumArtFlipLabels ? arr[1] : arr[0] : '';
 			v.key = md5.hashStr(handle.Path + handle.SubSong + (panel.lines == 1 ? (arr[0] || 'Unknown') : ((arr[0] || 'Unknown') + ' - ' + (arr[1] || 'Unknown'))) + ppt.artId);
 			if (ppt.itemOverlayType == 2) v.year = tf_d.EvalWithMetadb(handle).replace('0000', '');
 			if (!this.groupField && !panel.folderView && i % mod === 0) this.getField(handle, panel.lines == 1 || ppt.albumArtFlipLabels ? v.grp : v.lot, fields);
-			if (getItemCount) {
-				const count = v.count.replace(/\D/g, '');
-				if (panel.lines == 1 || ppt.albumArtFlipLabels) v.grp += ` (${count})`;
-				else v.lot += ` (${count})`;
-			}
 		});
 
 		if (!this.groupField && !panel.folderView) {
@@ -893,7 +932,7 @@ class Images {
 		if (ppt.rootNode) {
 			if (!this.groupField) this.groupField = 'Item';
 			const plurals = this.groupField.split(' ').map(v => pluralize(v));
-			const pluralField = plurals.join(' ').replace(/(album|artist|top|track)s\s/gi, '$1 ').replace(/(similar artist)\s/gi, '$1s ');
+			const pluralField = plurals.join(' ').replace(/(album|artist|top|track)s\s/gi, '$1 ').replace(/(similar artist)\s/gi, '$1s ').replace(/years - albums/gi, 'Year - Albums');
 			pop.tree[0].key = pop.tree[0].name;
 			const ln1 = pop.tree.length - 1;
 			const ln2 = panel.list.Count;
@@ -923,11 +962,19 @@ class Images {
 			this.text.h = Math.max(Math.round(g.CalcTextHeight('String', ui.font.group)) + lineSpacing, Math.round(g.CalcTextHeight('String', ui.font.lot)) + lineSpacing, 10);
 		});
 		this.style = {
+			dropShadow: ppt.albumArtDropShadow && ppt.albumArtLabelType != 3,
+			dropShadowStub: ppt.albumArtDropShadow && ppt.albumArtLabelType != 3 && (ppt.artId == 4 || ppt.curNoCoverImg > 2),
 			image: this.getStyle(),
 			rootComposite: ppt.rootNode && ppt.curRootImg == 3,
 			vertical: !ppt.albumArtFlowMode ? true : ui.h - panel.search.h > ui.w - ui.sbar.w
 		}
+
+		this.style.dropGrad = ppt.albumArtDropShadow && !this.style.dropShadow;
+		this.style.dropGradStub = ppt.albumArtDropShadow && !this.style.dropShadowStub;
+
 		this.letter.show = ppt.albumArtLetter;
+		this.letter.no = ppt.albumArtLetterNo;
+		this.letter.albumArtYearAuto = ppt.albumArtYearAuto;
 
 		switch (this.style.vertical) {
 			case true: {
@@ -938,10 +985,10 @@ class Images {
 					overlay: ppt.albumArtLabelType == 3 || ppt.albumArtLabelType == 4,
 					overlayDark: ppt.albumArtLabelType == 4,
 					flip: ppt.albumArtFlipLabels,
-					duration: ppt.itemShowDuration ? 1 : 0
+					statistics: ppt.itemShowStatistics ? 1 : 0
 				}
-				this.bor.pad = ppt.thumbNailGapStnd == 0 ? Math.round(this.text.h * (!this.labels.right ? 1.05 : 0.75)) : ppt.thumbNailGapStnd - Math.round(2 * $.scale);
-				this.im.offset = Math.round(!this.labels.hide && !this.labels.overlay ? this.bor.pad / 2 : 0);
+				this.bor.pad = !this.labels.hide && !this.labels.overlay ? (ppt.thumbNailGapStnd == 0 ? Math.round(this.text.h * (!this.labels.right ? 1.05 : 0.75)) : ppt.thumbNailGapStnd - Math.round(2 * $.scale)) : ppt.thumbNailGapCompact;
+				this.im.offset = Math.round(!this.labels.hide && !this.labels.overlay ? this.bor.pad / 2 : -2);
 
 				if (this.labels.hide || this.labels.overlay) {
 					this.panel.y = panel.search.h + Math.round(this.bor.pad / 2);
@@ -955,17 +1002,17 @@ class Images {
 					this.bor.bot = this.bor.side * 2;
 				}
 
-				const margin = this.letter.show && ppt.sbarShow ? Math.max(ppt.margin, this.letter.w + ui.l.w * 2 - (!ppt.albumArtFlowMode ? 0 : this.bor.pad / 4)) : ppt.margin;
+				const margin = ppt.margin;
 				this.panel.x = (ppt.sbarShow != 2 ? Math.max(margin, ui.sbar.w) : margin) + ui.l.w;
 				this.panel.w = ui.w - ui.l.w * 2 - (ui.sbar.type == 0 || ppt.sbarShow != 2 ? Math.max(margin, ui.sbar.w) * 2 : (margin * 2 + ui.sbar.w));
 				this.panel.h = ui.h - this.panel.y;
 
-				this.blockWidth = Math.round(ui.row.h * 4 * $.scale * ppt.zoomImg / 100 * [0.66, 1, 1.5, 2, 2.5][ppt.thumbNailSize]);
+				this.blockWidth = Math.round(ui.row.h * 4 * $.scale * ppt.zoomImg / 100 * [0.66, 1, 1.5, 2, 2.5, 3, 3.5, 5][ppt.thumbNailSize]);
 				this.columns = ppt.albumArtFlowMode || this.labels.right ? 1 : Math.max(Math.floor(this.panel.w / this.blockWidth), 1);
 				let gap = this.panel.w - this.columns * this.blockWidth;
 				gap = Math.floor(gap / this.columns);
 				this.columnWidth = !this.labels.right ? $.clamp(this.blockWidth + gap, 10, Math.min(this.panel.w, this.panel.h)) : $.clamp(this.blockWidth, 10, Math.min(this.panel.w, this.panel.h));
-				this.overlayHeight = !this.labels.overlay ? 0 : (panel.lines != 2 ? this.text.h * (1.2 + this.labels.duration) : Math.round(this.text.h * (2.1 + this.labels.duration)));
+				this.overlayHeight = !this.labels.overlay ? 0 : (panel.lines != 2 ? this.text.h * (1.2 + this.labels.statistics) : Math.round(this.text.h * (2.1 + this.labels.statistics)));
 				this.im.w = Math.round(Math.max(this.columnWidth - this.bor.side * 2 - this.bor.cov * 2 - (this.labels.hide || this.labels.overlay ? 1 : 0), 10));
 
 				if (this.labels.hide || this.labels.overlay) {
@@ -973,7 +1020,7 @@ class Images {
 					this.row.h = this.im.w + this.bor.cov;
 				} else {
 					this.im.w = Math.round(Math.max(this.columnWidth - this.bor.cov * 2 - this.bor.side * 2, 10));
-					this.row.h = !this.labels.right ? this.im.w + this.text.h * (panel.lines + this.labels.duration) + this.bor.cov * 2 + this.bor.side * 2 : this.im.w + this.bor.pad + 2;
+					this.row.h = !this.labels.right ? this.im.w + this.text.h * (panel.lines + this.labels.statistics) + this.bor.cov * 2 + this.bor.side * 2 : this.im.w + this.bor.pad + 2;
 				}
 				if (this.row.h > this.panel.h) {
 					this.im.w -= this.row.h - this.panel.h;
@@ -995,10 +1042,10 @@ class Images {
 					overlay: ppt.albumArtLabelType == 3 || ppt.albumArtLabelType == 4,
 					overlayDark: ppt.albumArtLabelType == 4,
 					flip: ppt.albumArtFlipLabels,
-					duration: ppt.itemShowDuration ? 1 : 0
+					statistics: ppt.itemShowStatistics ? 1 : 0
 				}
-				this.bor.pad = ppt.thumbNailGapStnd == 0 ? Math.round(this.text.h * 1.05) : ppt.thumbNailGapStnd - Math.round(2 * $.scale);
-				this.im.offset = Math.round(!this.labels.hide && !this.labels.overlay ? this.bor.pad / 2 : 0);
+				this.bor.pad = !this.labels.hide && !this.labels.overlay ? (ppt.thumbNailGapStnd == 0 ? Math.round(this.text.h * 1.05) : ppt.thumbNailGapStnd - Math.round(2 * $.scale)) : ppt.thumbNailGapCompact;
+				this.im.offset = Math.round(!this.labels.hide && !this.labels.overlay ? this.bor.pad / 2 : -2);
 				if (this.labels.hide || this.labels.overlay) {
 					this.bor.bot = 0;
 					this.bor.side = 0;
@@ -1016,7 +1063,7 @@ class Images {
 				this.panel.w = ui.w;
 				if (!this.labels.hide && !this.labels.overlay) {
 					this.row.h = this.panel.h;
-					const extra = this.text.h * (panel.lines + this.labels.duration) + this.bor.cov * 2 + this.bor.side * 2;
+					const extra = this.text.h * (panel.lines + this.labels.statistics) + this.bor.cov * 2 + this.bor.side * 2;
 					this.im.w = Math.min(this.panel.h - extra, this.panel.h - extra);
 					this.im.w = $.clamp(this.im.w, 10, Math.round(this.panel.w - (this.bor.cov * 2 + this.bor.side * 2)));
 					this.blockWidth = this.im.w + this.bor.cov * 2 + this.bor.side * 2;
@@ -1029,7 +1076,7 @@ class Images {
 					this.row.h = this.im.w + extra;
 				}
 				this.columns = Math.max(Math.floor(this.panel.w / this.blockWidth), 1);
-				this.overlayHeight = !this.labels.overlay ? 0 : (panel.lines != 2 ? this.text.h * (1.2 + this.labels.duration) : Math.round(this.text.h * (2.1 + this.labels.duration)));
+				this.overlayHeight = !this.labels.overlay ? 0 : (panel.lines != 2 ? this.text.h * (1.2 + this.labels.statistics) : Math.round(this.text.h * (2.1 + this.labels.statistics)));
 				this.box.w = this.blockWidth - this.bor.side * 2;
 				this.box.h = this.row.h - this.bor.bot;
 				panel.rows = Math.max(Math.floor(this.panel.w / this.blockWidth));
@@ -1044,24 +1091,25 @@ class Images {
 		this.cellWidth = Math.max(200, this.im.w / 2);
 		this.labels.counts = ppt.itemOverlayType != 1 && ppt.nodeCounts;
 		this.style.y = this.style.vertical ? Math.floor(this.panel.y + (!this.labels.hide && !this.labels.overlay ? ppt.thumbNailGapStnd / 2 : ppt.thumbNailGapCompact / 2)) : this.panel.y;
+		if (this.style.dropShadow) this.getShadow();
 
 		if (!this.labels.hide) {
 			if (!this.labels.overlay) {
 				this.text.x = !this.labels.right ? Math.round((this.box.w - this.im.w) / 2) : Math.max(Math.round((this.box.w - this.im.w) / 2), 5 * $.scale) * 2 + this.im.w;
-				this.text.y1 = !this.labels.right ? this.im.w + Math.round(this.bor.cov * 0.5) : Math.round((this.im.w - this.text.h * panel.lines) / 2) - (this.labels.duration ? this.text.h / 2 : 0);
+				this.text.y1 = !this.labels.right ? this.im.w + Math.round(this.bor.cov * 0.5) : Math.round((this.im.w - this.text.h * panel.lines) / 2) - (this.labels.statistics ? this.text.h / 2 : 0);
 				this.text.y2 = !this.labels.right ? Math.round(this.text.y1 + this.text.h * 0.95) : this.text.y1 + this.text.h;
 				this.text.y3 = !this.labels.right ? Math.round(this.text.y2 + this.text.h * 0.95) : this.text.y2 + this.text.h;
 				this.text.w = !this.labels.right ? this.im.w : this.panel.w - this.text.x - 12;
 			} else {
 				this.text.x = Math.round(10 + (ppt.thumbNailGapCompact - 3) / 2);
-				this.text.y1 = Math.round(this.im.w - this.overlayHeight + 2 + (this.overlayHeight - this.text.h * (panel.lines + this.labels.duration)) / 2);
+				this.text.y1 = Math.round(this.im.w - this.overlayHeight + 2 + (this.overlayHeight - this.text.h * (panel.lines + this.labels.statistics)) / 2);
 				this.text.w = this.box.w - 20 - ppt.thumbNailGapCompact - 6;
 			}
 		}
 
 		this.cachesize.min = panel.rows * this.columns * 3 + (this.albumArtDiskCache ? panel.rows * 2 : panel.rows) * this.columns * 2;
 		this.createImages();
-		this.createCacheFolder();
+		this.getCurrentDatabase();
 		if (ppt.albumArtPreLoad && !this.zooming && this.albumArtDiskCache) this.getItemsToDraw(true);
 		this.setNoArtist();
 		this.setNoCover();
@@ -1182,7 +1230,7 @@ class Images {
 			}
 			const caption = 'Reset All Images';
 			const prompt = 'This action resets the library tree thumbnail disk cache\n\nContinue?';
-			const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+			const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', '', '', continue_confirmation) : true;
 			if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 			return;
 		}
@@ -1234,6 +1282,7 @@ class Images {
 				$.save(v, JSON.stringify(imgDatabase, null, 3), true);
 			}
 		});
+		this.getCurrentDatabase();
 	}
 
 	setNoArtist() {
@@ -1273,10 +1322,6 @@ class Images {
 			this.root_img = gdi.Image(this.root_images[ppt.curRootImg]);
 		}
 		ppt.rootImages = JSON.stringify(rootImages);
-	}
-
-	setSelection() {
-		return panel.imgView && (ppt.albumArtFlowMode && ppt.flowModeFollowSelection || !ppt.albumArtFlowMode && ppt.stndModeFollowSelection) && (!ppt.followPlaylistFocus || ppt.libSource) && panel.m.x == -1;
 	}
 
 	sort(data, prop) {

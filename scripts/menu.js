@@ -164,10 +164,18 @@ class MenuItems {
 
 		if (this.validItem && ppt.albumArtOptionsShow) {
 			menu.newItem({
-				str: !panel.imgView ? 'Show album art' : 'Show tree',
+				str: !panel.imgView ? 'Show album art' : (!ppt.facetView ? 'Show tree' : 'Show text'),
 				func: () => this.setPlaylist(4),
 				flags: !panel.pn_h_auto || ppt.pn_h != ppt.pn_h_min ? MF_STRING : MF_GRAYED,
-				separator: !panel.imgView || this.show_context && !ui.style.topBarShow
+				separator: !panel.imgView //|| this.show_context && !ui.style.topBarShow
+			});
+		}
+
+		if (this.validItem && panel.imgView) {
+			menu.newItem({
+				str: ppt.artId != 4 ? 'Show artists' : 'Show albums',
+				func: () => {ppt.artId = ppt.artId != 4 ? 4 : 0; this.setPlaylist(5);},
+				separator: this.show_context && !ui.style.topBarShow
 			});
 		}
 
@@ -199,7 +207,7 @@ class MenuItems {
 		if (d.sortType) {
 			menu.newItem({
 				menuName: d.menuName,
-				str: ['', 'By year', 'Albums by year (group level)'][d.sortType],
+				str: ['', 'By year', 'Albums by year'][d.sortType],
 				flags: MF_GRAYED,
 				separator: true
 			});
@@ -219,6 +227,15 @@ class MenuItems {
 			str: 'Configure views...',
 			func: () => panel.open('views')
 		});
+		
+		menu.newMenu({menuName: 'Statistics', appendTo: mainMenu(), separator: true});
+		[pop.countsRight && !panel.imgView ? ['None', '# Tracks', '# Items'][pop.nodeCounts] : 'None', 'Bitrate', 'Duration', 'Total size', 'Rating', 'Popularity', 'Date', 'Playback queue', 'Playcount', 'First played', 'Last played', 'Added', 'Configure statistics...'].forEach((v, i) => menu.newItem({
+			menuName: 'Statistics',
+			str: v,
+			func: () => this.setStatistics(i),
+			checkRadio: i == ppt.itemShowStatistics,
+			separator: !i || i == 7 || i == 11
+		}));
 
 		menu.newMenu({menuName: 'Album art', appendTo: mainMenu(), hide: !panel.imgView});
 		['Front', 'Back', 'Disc', 'Icon', 'Artist', 'Group: auto', 'Group: top level', 'Group: two levels', 'Change group name...', 'Configure album art...'].forEach((v, i) => menu.newItem({
@@ -231,7 +248,7 @@ class MenuItems {
 		}));
 
 		menu.newMenu({menuName: 'Quick setup', appendTo: mainMenu()});
-		['Traditional', 'Modern [default]', 'Ultra-Modern', 'Clean', 'List view'].forEach((v, i) => menu.newItem({
+		['Traditional', 'Modern [default]', 'Ultra-Modern', 'Clean', 'Facet'].forEach((v, i) => menu.newItem({
 			menuName: 'Quick setup',
 			str: v,
 			func: () => panel.set('quickSetup', i),
@@ -243,7 +260,7 @@ class MenuItems {
 				menuName: 'Quick setup',
 				str: v,
 				func: () => panel.set('quickSetup', i + 5),
-				flags: i == 4 && (ppt.thumbNailSize == 4 || !panel.imgView || ppt.albumArtFlowMode) || i == 5 && (ppt.thumbNailSize == 0 || !panel.imgView || ppt.albumArtFlowMode) ? MF_GRAYED : MF_STRING,
+				flags: i == 4 && (ppt.thumbNailSize == 7 || !panel.imgView || ppt.albumArtFlowMode) || i == 5 && (ppt.thumbNailSize == 0 || !panel.imgView || ppt.albumArtFlowMode) ? MF_GRAYED : MF_STRING,
 				checkItem: i == 7 && ppt.presetLoadCurView,
 				separator: i == 2 || i == 3 || i == 5 || i == 6
 			}));
@@ -257,6 +274,14 @@ class MenuItems {
 			checkRadio: i == (ppt.libSource - 1 < 0 || ppt.fixedPlaylist ? 2 : ppt.libSource - 1),
 			separator: i == 2
 		}));
+
+		menu.newItem({
+			menuName: 'Source',
+			str: 'Select source panel',
+			func: () => this.setSourcePanel(),
+			flags: ppt.libSource != 2 ? MF_GRAYED : MF_STRING,
+			separator: true
+		});
 
 		menu.newMenu({menuName: 'Select playlist', appendTo: 'Source'});
 		menu.newItem({
@@ -304,9 +329,9 @@ class MenuItems {
 	filterMenu() {
 		fMenu.newMenu({});
 		for (let i = 0; i < panel.filter.menu.length + 1; i++) fMenu.newItem({
-			str: i != panel.filter.menu.length ? (!i ? 'No filter' : panel.filter.menu[i]) : 'Always reset scroll',
+			str: i != panel.filter.menu.length ? (!i ? 'No filter' : panel.filter.menu[i]) : 'Auto-manage scroll',
 			func: () => panel.set('Filter', i),
-			checkItem: i == panel.filter.menu.length && ppt.reset,
+			checkItem: i == panel.filter.menu.length && !ppt.reset,
 			checkRadio: i == ppt.filterBy && i < panel.filter.menu.length,
 			separator: !i || i == panel.filter.menu.length - 1 || i == panel.filter.menu.length
 		});
@@ -411,7 +436,7 @@ class MenuItems {
 		but.refresh(true);
 	}
 
-	playlists_changed(init) {
+	playlists_changed() {
 		this.pl = [];
 		for (let i = 0; i < plman.PlaylistCount; i++) this.pl.push({
 			menuName: plman.GetPlaylistName(i).replace(/&/g, '&&'),
@@ -432,9 +457,9 @@ class MenuItems {
 
 		let item = pop.tree[this.ix];
 		let row = -1;
-		const tr = pop.tree.length > this.ix && this.ix != -1 ? !pop.inlineRoot ? item.tr : Math.max(item.tr - 1, 0) : -1;
+		const level = pop.tree.length > this.ix && this.ix != -1 ? !pop.inlineRoot ? item.level : Math.max(item.level - 1, 0) : -1;
 
-		this.validItem = this.settingsBtnDn ? false : !panel.imgView ? y < panel.tree.y + pop.rows * sbar.row.h && pop.tree.length > this.ix && this.ix != -1 && (x < Math.round(ppt.treeIndent * tr) + ui.icon.w + ppt.margin && (!item.track || item.root) || pop.check_ix(item, x, y, true)) : pop.tree.length > this.ix && this.ix != -1;
+		this.validItem = this.settingsBtnDn ? false : !panel.imgView ? y < panel.tree.y + pop.rows * sbar.row.h && pop.tree.length > this.ix && this.ix != -1 && (x < Math.round(ppt.treeIndent * level) + ui.icon.w + ppt.margin && (!item.track || item.root) || pop.check_ix(item, x, y, true)) : pop.tree.length > this.ix && this.ix != -1;
 
 		if (!this.validItem && !this.settingsBtnDn && ppt.settingsShow && y > panel.search.sp) {
 			this.ix = pop.row.i != -1 ? pop.row.i : !panel.imgView ? pop.tree.length - 1 : -1;
@@ -457,7 +482,7 @@ class MenuItems {
 					if (m == this.ix || v.sel) {
 						if (row == -1 || m < row) {
 							row = m;
-							this.nm = (v.tr ? arr[v.par].srt[0] : '') + v.srt[0];
+							this.nm = (v.level ? arr[v.par].srt[0] : '') + v.srt[0];
 							this.nm = this.nm.toUpperCase();
 						}
 						count += pop.trackCount(v.item);
@@ -600,6 +625,11 @@ class MenuItems {
 				panel.imgView = ppt.albumArtShow;
 				this.loadView(false, !panel.imgView ? (ppt.artTreeSameView ? ppt.viewBy : ppt.treeViewBy) : (ppt.artTreeSameView ? ppt.viewBy : ppt.albumArtViewBy), pop.sel_items[0]);
 				break;
+			case 5:
+				lib.logTree();
+				pop.clearTree();
+				this.loadView(false, !panel.imgView ? (ppt.artTreeSameView ? ppt.viewBy : ppt.treeViewBy) : (ppt.artTreeSameView ? ppt.viewBy : ppt.albumArtViewBy), pop.sel_items[0]);
+				break;
 		}
 	}
 
@@ -649,6 +679,56 @@ class MenuItems {
 		if (ppt.showSource) panel.setRootName();
 		lib.treeState(false, 2);
 	}
+	
+	setSourcePanel() {
+		const ok_callback = (status, input) => {
+			if (status != 'cancel') {
+				ppt.panelSelectionPlaylist = input;
+			}
+		}
+		const caption = 'Panel source name';
+		const def = ppt.panelSelectionPlaylist;
+		const prompt = 'Enter source panel name\n\n• To get the name, go to the library tree panel to be used as source\n• Press shift + windows key and choose configure\n• Paste the panel name or id at the top into here\n• Name is also used for a cache playlist that remembers last open state\n• Edit source panel name if required\n• For more than one source panel, use pipe separator, e.g. Genre|Artist'
+		const fallback = popUpBox.isHtmlDialogSupported() ? popUpBox.input(caption, prompt, ok_callback, '', def) : true;
+		if (fallback) {
+			let ns = '';
+			let status = 'ok';
+			try {
+				ns = utils.InputBox(0, prompt, caption, def, true);
+			} catch(e) {
+				status = 'cancel';
+			}
+			ok_callback(status, ns);
+		}
+	}
+
+	setStatistics(i) {
+		if (i < 12) {
+			const curStatisticsShown = ppt.itemShowStatistics > 0;
+			ppt.itemShowStatistics = i;
+			ppt.itemShowStatisticsLast = ppt.itemShowStatistics;
+			pop.tree.forEach(v => {
+				v.id = '';
+				v.count = ''; // has to reset parentheses if stats change off/on
+				delete v.statistics;
+				delete v._statistics;
+			});
+			pop.cache = {
+				'standard': {},
+				'search': {},
+				'filter': {}
+			}
+			pop.statisticsShow = ppt.itemShowStatistics;
+			pop.label = !ppt.labelStatistics || !pop.statisticsShow ? '' : pop.statistics[pop.statisticsShow];
+			const statisticsShown = ppt.itemShowStatistics > 0;
+			if (panel.imgView && curStatisticsShown != statisticsShown) {
+				img.labels = {statistics: ppt.itemShowStatistics ? 1 : 0}
+				img.clearCache();
+				panel.set('view', ppt.viewBy);
+			}
+			panel.treePaint();
+		} else panel.open('display');
+	}
 
 	setTreeState(i) {
 		switch (i) {
@@ -671,7 +751,10 @@ class MenuItems {
 			} else {
 				if (!panel.imgView) ppt.treeViewBy = i;
 				else ppt.albumArtViewBy = i;
-				if (ppt.treeViewBy != ppt.albumArtViewBy) ppt.set(panel.imgView ? 'Tree' : 'Tree Image', null);
+				if (ppt.treeViewBy != ppt.albumArtViewBy) {
+					ppt.set(panel.imgView ? 'Tree' : 'Tree Image', null);
+					ppt.set(panel.imgView ? 'Tree Search' : 'Tree Image Search', null);
+				}
 			}
 			panel.set('view', i);
 		}
@@ -703,8 +786,8 @@ class MenuItems {
 			const scrollPos = sbar.scroll;
 			const selected = [];
 			pop.tree.forEach((v, i) => {
-				const tr = !ppt.rootNode ? v.tr : v.tr - 1; // 1 level memory: more is less reliable
-				if (!tr) {
+				const level = !ppt.rootNode ? v.level : v.level - 1; // 1 level memory: more is less reliable
+				if (!level) {
 					if (v.child.length) expanded.push(i);
 					if (v.sel) selected.push(i);
 				}

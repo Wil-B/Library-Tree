@@ -98,7 +98,8 @@ class Panel {
 			h: 60,
 			def_w: 85,
 			def_h: 60,
-			page: 'behaviour'
+			page: 'behaviour',
+			version: `v${window.ScriptInfo.Version}`
 		}));
 
 		if (this.pn_h_auto) {
@@ -169,7 +170,7 @@ class Panel {
 		this.multiPrefix = false;
 		this.multiProcess = false;
 		this.noDisplay = false;
-		this.multiValueTagSort = '';
+		this.playlistSort = '';
 		this.statistics = false;
 		this.view = '';
 		this.view_ppt.forEach((v, i) => {
@@ -243,7 +244,7 @@ class Panel {
 			if (this.view.includes('%<') || this.view.includes(this.splitter)) this.multiProcess = true;
 			if (this.multiProcess) {
 				if (this.view.includes('$swapbranchprefix{') || this.view.includes('$stripbranchprefix{')) this.multiPrefix = true;
-				this.multiValueTagSort = FbTitleFormat((this.view.includes('album artist') || !this.view.includes('%artist%') && !this.view.includes('%<artist>%') && !this.view.includes('$meta(artist') ? '%album artist%' : '%artist%') + '  %album%  [[%discnumber%.]%tracknumber%. ][%track artist% - ]%title%');
+				this.playlistSort = FbTitleFormat((this.view.includes('album artist') || !this.view.includes('%artist%') && !this.view.includes('%<artist>%') && !this.view.includes('$meta(artist') ? '%album artist%' : '%artist%') + '  %album%  [[%discnumber%.]%tracknumber%. ][%track artist% - ]%title%');
 			}
 			while (this.view.includes('$stripbranchprefix{')) {
 				ix1 = this.view.indexOf('$stripbranchprefix{');
@@ -558,11 +559,11 @@ class Panel {
 		const ln_sp = ui.style.topBarShow && !ui.id.local ? Math.floor(ui.row.h * 0.1) : 0;
 		const sbarStyle = !ppt.sbarFullHeight ? 2 : 0;
 		this.calcText();
-		this.ln.x = ppt.countsRight || ppt.itemShowDuration || ppt.rowStripes || ppt.fullLineSelection || pop.inlineRoot ? 0 : ui.sz.marginSearch;
+		this.ln.x = ppt.countsRight || ppt.itemShowStatistics || ppt.rowStripes || ppt.fullLineSelection || pop.inlineRoot ? 0 : ui.sz.marginSearch;
 		this.ln.w = ui.w - this.ln.x - 1;
-		this.search.h = ui.style.topBarShow ? ui.row.h + (!ui.id.local ? ln_sp * 2 : 0) : ui.sz.margin;
+		this.search.h = ui.style.topBarShow ? ui.row.h + (!ui.id.local ? ln_sp * 2 : 0) : ppt.marginTopBottom;
 		this.search.sp = this.search.h - ln_sp;
-		let sp = ui.h - this.search.h - (ui.style.topBarShow ? 0 : ui.sz.margin);
+		let sp = ui.h - this.search.h - (ui.style.topBarShow ? 0 : ppt.marginTopBottom);
 		this.rows = sp / ui.row.h;
 		this.rows = Math.floor(this.rows);
 		sp = ui.row.h * this.rows;
@@ -652,12 +653,11 @@ class Panel {
 
 		this.getViews();
 		let cfgWindow = ppt.get('Library Tree Dialog Box');
-		if (page !== undefined) {
-			cfgWindow = $.jsonParse(cfgWindow);
-			cfgWindow.page = page;
-			cfgWindow = JSON.stringify(cfgWindow);
-			ppt.set('Library Tree Dialog Box', cfgWindow);
-		}
+		cfgWindow = $.jsonParse(cfgWindow);
+		if (page !== undefined) cfgWindow.page = page;
+		cfgWindow.version = `v${window.ScriptInfo.Version}`;
+		cfgWindow = JSON.stringify(cfgWindow);
+		ppt.set('Library Tree Dialog Box', cfgWindow);
 		if (popUpBox.isHtmlDialogSupported()) popUpBox.config(JSON.stringify([this.dialogGrps, this.dialogFiltGrps, this.defViewPatterns, this.defFilterPatterns]), JSON.stringify(ppt), cfgWindow, ok_callback);
 		else {
 			popUpBox.ok = false;
@@ -678,12 +678,12 @@ class Panel {
 						const continue_confirmation = (status, confirmed) => {
 							if (confirmed) {
 								ppt.countsRight = false;
-								ppt.itemShowDuration = false;
+								ppt.itemShowStatistics = 0;
 								ppt.nodeStyle = 0;
 								ppt.inlineRoot = false;
 								ppt.autoCollapse = false;
 								ppt.treeAutoExpandSingle = false;
-								ppt.treeListView = false;
+								ppt.facetView = false;
 								ui.sbar.type = 0;
 								ppt.sbarType = 0;
 								ppt.sbarShow = 1;
@@ -702,7 +702,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: Traditional Style';
-						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', '', '', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -710,12 +710,12 @@ class Panel {
 						const continue_confirmation = (status, confirmed) => {
 							if (confirmed) {
 								ppt.countsRight = true;
-								ppt.itemShowDuration = false;
+								ppt.itemShowStatistics = 0;
 								ppt.nodeStyle = 1;
 								ppt.inlineRoot = true;
 								ppt.autoCollapse = false;
 								ppt.treeAutoExpandSingle = false;
-								ppt.treeListView = false;
+								ppt.facetView = false;
 								ui.sbar.type = 1;
 								ppt.sbarType = 1;
 								ppt.sbarShow = 1;
@@ -734,7 +734,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: Modern Style';
-						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', '', '', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -742,12 +742,12 @@ class Panel {
 						const continue_confirmation = (status, confirmed) => {
 							if (confirmed) {
 								ppt.countsRight = true;
-								ppt.itemShowDuration = true;
+								ppt.itemShowStatistics = 1;
 								ppt.nodeStyle = 3;
 								ppt.inlineRoot = true;
 								ppt.autoCollapse = true;
 								ppt.treeAutoExpandSingle = true;
-								ppt.treeListView = false;
+								ppt.facetView = false;
 								ui.sbar.type = 1;
 								ppt.sbarType = 1;
 								ppt.sbarShow = 1;
@@ -773,7 +773,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: Ultra Modern Style';
-						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', '', '', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -781,12 +781,12 @@ class Panel {
 						const continue_confirmation = (status, confirmed) => {
 							if (confirmed) {
 								ppt.countsRight = true;
-								ppt.itemShowDuration = false;
+								ppt.itemShowStatistics = 0;
 								ppt.nodeStyle = 5;
 								ppt.inlineRoot = true;
 								ppt.autoCollapse = false;
 								ppt.treeAutoExpandSingle = false;
-								ppt.treeListView = false;
+								ppt.facetView = false;
 								ui.sbar.type = 0;
 								ppt.sbarType = 0;
 								ppt.sbarShow = 1;
@@ -805,7 +805,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: Clean';
-						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', '', '', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -813,12 +813,12 @@ class Panel {
 						const continue_confirmation = (status, confirmed) => {
 							if (confirmed) {
 								ppt.countsRight = true;
-								ppt.itemShowDuration = false;
+								ppt.itemShowStatistics = 0;
 								ppt.nodeStyle = 1;
 								ppt.inlineRoot = true;
 								ppt.autoCollapse = false;
 								ppt.treeAutoExpandSingle = false;
-								ppt.treeListView = true;
+								ppt.facetView = true;
 								panel.imgView = ppt.albumArtShow = false;
 								ppt.albumArtLabelType = 1;
 								ppt.thumbNailSize = 2;
@@ -836,8 +836,8 @@ class Panel {
 								this.load();
 							}
 						}
-						const caption = 'Quick Setup: List View';
-						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						const caption = 'Quick Setup: Facet';
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', '', '', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -854,13 +854,13 @@ class Panel {
 								ppt.highLightNode = false;
 								ppt.verticalPad = 5;
 								ppt.rootNode = 3;
-								ppt.treeListView = false;
+								ppt.facetView = false;
 								panel.imgView = ppt.albumArtShow = true;
 								if (!ppt.presetLoadCurView) ppt.viewBy = 1;
 								ppt.albumArtFlowMode = false;
 								ppt.albumArtLabelType = 2;
 								ppt.albumArtFlipLabels = true;
-								ppt.itemShowDuration = true;
+								ppt.itemShowStatistics = 1;
 								ppt.imgStyleFront = 1;
 								ppt.itemOverlayType = 2;
 								ppt.thumbNailSize = 2;
@@ -870,7 +870,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: Covers [Labels Right]';
-						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', '', '', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -887,13 +887,13 @@ class Panel {
 								ppt.highLightNode = false;
 								ppt.verticalPad = 5;
 								ppt.rootNode = 3;
-								ppt.treeListView = false;
+								ppt.facetView = false;
 								panel.imgView = ppt.albumArtShow = true;
 								if (!ppt.presetLoadCurView) ppt.viewBy = 1;
 								ppt.albumArtFlowMode = false;
 								ppt.albumArtLabelType = 1;
 								ppt.albumArtFlipLabels = true;
-								ppt.itemShowDuration = false;
+								ppt.itemShowStatistics = 0;
 								ppt.imgStyleFront = 1;
 								ppt.itemOverlayType = 1;
 								ppt.thumbNailSize = 2;
@@ -903,7 +903,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: Covers [Labels Bottom]';
-						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', '', '', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -920,13 +920,13 @@ class Panel {
 								ppt.highLightNode = false;
 								ppt.verticalPad = 5;
 								ppt.rootNode = 3;
-								ppt.treeListView = false;
+								ppt.facetView = false;
 								panel.imgView = ppt.albumArtShow = true;
 								if (!ppt.presetLoadCurView) ppt.viewBy = 1;
 								ppt.albumArtFlowMode = false;
 								ppt.albumArtLabelType = 4;
 								ppt.albumArtFlipLabels = true;
-								ppt.itemShowDuration = false;
+								ppt.itemShowStatistics = 0;
 								ppt.imgStyleFront = 1;
 								ppt.itemOverlayType = 0;
 								ppt.thumbNailSize = 3;
@@ -936,7 +936,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: Covers [Labels Blend]';
-						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', '', '', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -953,12 +953,12 @@ class Panel {
 								ppt.highLightNode = false;
 								ppt.verticalPad = 5;
 								ppt.rootNode = 3;
-								ppt.treeListView = false;
+								ppt.facetView = false;
 								panel.imgView = ppt.albumArtShow = true;
 								if (!ppt.presetLoadCurView) ppt.viewBy = 0;
 								ppt.albumArtFlowMode = false;
 								ppt.albumArtLabelType = 2;
-								ppt.itemShowDuration = false;
+								ppt.itemShowStatistics = 0;
 								ppt.imgStyleArtist = 2;
 								ppt.itemOverlayType = 0;
 								ppt.thumbNailSize = 1;
@@ -968,7 +968,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: Artist Photos [Labels Right]';
-						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', '', '', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -982,12 +982,12 @@ class Panel {
 								ppt.inlineRoot = true;
 								ppt.autoCollapse = false;
 								ppt.treeAutoExpandSingle = false;
-								ppt.treeListView = false;
+								ppt.facetView = false;
 								panel.imgView = ppt.albumArtShow = true;
 								if (!ppt.presetLoadCurView) ppt.viewBy = 1;
 								ppt.albumArtFlowMode = true;
 								ppt.albumArtLabelType = 1;
-								ppt.itemShowDuration = false;
+								ppt.itemShowStatistics = 0;
 								ppt.imgStyleFront = 1;
 								ppt.itemOverlayType = 0;
 								ppt.thumbNailSize = 2;
@@ -997,7 +997,7 @@ class Panel {
 							}
 						}
 						const caption = 'Quick Setup: Flow Mode';
-						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', '', '', continue_confirmation) : true;
 						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
 						break;
 					}
@@ -1008,8 +1008,8 @@ class Panel {
 				break;
 			case 'Filter':
 				lib.searchCache = {};
-				pop.subCounts.filter = {};
-				pop.subCounts.search = {};
+				pop.cache.filter = {};
+				pop.cache.search = {};
 				switch (i) {
 					case this.filter.menu.length:
 						ppt.toggle('reset');
@@ -1022,12 +1022,31 @@ class Panel {
 						ppt.filterBy = i;
 						this.calcText();
 						if (this.search.txt) lib.upd_search = true;
-						if (!ppt.rememberTree && !ppt.reset) lib.logTree();
-						else if (ppt.rememberTree) lib.logFilter();
+						if (!ppt.reset) {
+							const ix = pop.get_ix(!panel.imgView ? 0 : img.panel.x + 1, (!panel.imgView || img.style.vertical ? panel.tree.y : panel.tree.x) + sbar.row.h / 2, true, false);
+							let l = Math.min(Math.floor(ix + panel.rows), pop.tree.length);
+							if (ix != -1) {
+								for (i = ix; i < l; i++) {
+									if (pop.tree[i].sel) {
+										sbar.checkScroll(sbar.row.h * i, 'full', true);
+										lib.logTree();
+										break;
+									}
+								}
+							}
+						if (!ppt.rememberTree && !ppt.reset) 
+							lib.logTree();
+						else if (ppt.rememberTree) 
+							lib.logFilter();
+						}
 						lib.getLibrary();
 						lib.rootNodes(!ppt.reset ? 1 : 0, true);
 						but.refresh(true);
 						this.searchPaint();
+						if (!pop.notifySelection())  {
+							const list = !this.search.txt.length || !lib.list.Count ? lib.list : this.list;
+							window.NotifyOthers(window.Name, ppt.filterBy ? list : new FbMetadbHandleList());
+						}
 						if (ppt.searchSend == 2 && this.search.txt.length) pop.load(this.list, false, false, false, true, false);
 						break;
 				}
@@ -1039,7 +1058,7 @@ class Panel {
 				this.getFields(i < this.grp.length ? i : ppt.viewBy, ppt.filterBy);
 				this.on_size();
 				lib.searchCache = {};
-				pop.subCounts = {
+				pop.cache = {
 					'standard': {},
 					'search': {},
 					'filter': {}
@@ -1049,7 +1068,16 @@ class Panel {
 				if ((ppt.rememberView || treeArtToggle) && lib.exp[key]) lib.readTreeState(false, treeArtToggle);
 				lib.getLibrary(treeArtToggle);
 				lib.rootNodes((ppt.rememberView || treeArtToggle), (ppt.rememberView || treeArtToggle) ? true : false);
-				if (ppt.rememberView) lib.logTree();
+				if (ppt.rememberView) {
+					this.calcText();
+					but.refresh(true);
+					this.searchPaint();
+					lib.logTree();
+					if (!pop.notifySelection())  {
+						const list = !this.search.txt.length || !lib.list.Count ? lib.list : this.list;
+						window.NotifyOthers(window.Name, ppt.filterBy ? list : new FbMetadbHandleList());
+					}
+				}
 				this.draw = true;
 				if (ppt.searchSend == 2 && this.search.txt.length) pop.load(this.list, false, false, false, true, false);
 				pop.checkAutoHeight();
@@ -1077,12 +1105,17 @@ class Panel {
 			case 3: {
 				const nm = this.viewName.replace(/view by|^by\b/i, '').trim();
 				const basenames = nm.split(' ').map(v => pluralize(v));
-				const basename = basenames.join(' ').replace(/(album|artist|top|track)s\s/gi, '$1 ').replace(/(similar artist)\s/gi, '$1s ');
+				const basename = basenames.join(' ').replace(/(album|artist|top|track)s\s/gi, '$1 ').replace(/(similar artist)\s/gi, '$1s ').replace(/years - albums/gi, 'Year - Albums');
 				this.rootName = (!this.imgView ? `${!ppt.showSource ? 'All' : this.sourceName} (#^^^^# ${basename})` : `All #^^^^# ${basename}`);
 				this.rootName1 = (!this.imgView ? `${!ppt.showSource ? 'All' : this.sourceName} (1 ${nm})` : `All 1 ${nm}`);
 				break;
 			}
 		}
+	}
+
+	setSelection() {
+		const flowMode = this.imgView && ppt.albumArtFlowMode;
+		return (flowMode && ppt.flowModeFollowSelection || !flowMode && ppt.stndModeFollowSelection) && (!ppt.followPlaylistFocus || ppt.libSource) && panel.m.x == -1;
 	}
 
 	setTopBar() {
@@ -1113,6 +1146,7 @@ class Panel {
 	}
 
 	updateProp(prop, value) {
+		const curActionMode = ppt.actionMode;
 		Object.entries(prop).forEach(v => {
 			ppt[v[0].replace('_internal', '')] = v[1][value]
 		});
@@ -1121,14 +1155,25 @@ class Panel {
 		img.preLoadItems = [];
 		clearInterval(img.timer.preLoad);
 		img.timer.preLoad = null;
+
 		pop.autoPlay.send = ppt.autoPlay;
-		pop.autoPlay = {
-			click: ppt.clickAction < 2 ? false : ppt.clickAction,
-			send: ppt.autoPlay
-		}
-		pop.autoFill = {
-			mouse: ppt.clickAction == 1 ? true : false,
-			key: ppt.keyAction
+		pop.setActions();
+		if (ppt.actionMode != curActionMode) {
+			if (ppt.actionMode != 2) {
+				ppt.itemShowStatistics = ppt.itemShowStatisticsLast;
+				ppt.highLightNowplaying = ppt.highLightNowplayingLast;
+				ppt.nowPlayingIndicator = ppt.nowPlayingIndicatorLast;
+				ppt.nowPlayingSidemarker = ppt.nowPlayingSidemarkerLast;
+			} else {
+				ppt.itemShowStatisticsLast = ppt.itemShowStatistics;
+				ppt.highLightNowplayingLast = ppt.highLightNowplaying;
+				ppt.nowPlayingIndicatorLast = ppt.nowPlayingIndicator;
+				ppt.nowPlayingSidemarkerLast = ppt.nowPlayingSidemarker;
+				ppt.itemShowStatistics = 7;
+				ppt.highLightNowplaying = true;
+				ppt.nowPlayingIndicator = true;
+				ppt.nowPlayingSidemarker = true;
+			}
 		}
 		ppt.autoExpandLimit = Math.round(ppt.autoExpandLimit);
 		if (isNaN(ppt.autoExpandLimit)) ppt.autoExpandLimit = 350;
@@ -1140,13 +1185,37 @@ class Panel {
 		if (isNaN(ppt.treeIndent)) ppt.treeIndent = 19 * $.scale;
 		ppt.treeIndent = $.clamp(ppt.treeIndent, 0, 100);
 
+		pop.cache = {
+			'standard': {},
+			'search': {},
+			'filter': {}
+		};
+	
+		pop.tf = {
+			added: FbTitleFormat(ppt.tfAdded),
+			bitrate: FbTitleFormat('%bitrate%'),
+			bytes: FbTitleFormat('%path%|%filesize%'),
+			date: FbTitleFormat(ppt.tfDate),
+			firstPlayed: FbTitleFormat(ppt.tfFirstPlayed),
+			lastPlayed: FbTitleFormat(ppt.tfLastPlayed),
+			pc: FbTitleFormat(ppt.tfPc),
+			popularity: FbTitleFormat(ppt.tfPopularity),
+			rating: FbTitleFormat(ppt.tfRating)
+		}
+		
+		pop.tree.forEach(v => {
+			v.id = '';
+			v.count = '';
+			delete v.statistics;
+			delete v._statistics;
+		});
 		lib.checkView();
 		lib.logTree();
 		img.setRoot();
 		ppt.zoomImg = Math.round($.clamp(ppt.zoomImg, 10, 500));
 
 		let o = !this.imgView ? 'verticalPad' : 'verticalAlbumArtPad';
-		if (!ppt[o]) ppt[o] = !this.imgView ? 3 : 2;
+		if (ppt[o] === null) ppt[o] = !this.imgView ? 3 : 2;
 		ppt[o] = Math.round(ppt[o]);
 		if (isNaN(ppt[o])) ppt[o] = !this.imgView ? 3 : 2;
 		ppt[o] = $.clamp(ppt[o], 0, !this.imgView ? 100 : 20);
@@ -1166,10 +1235,15 @@ class Panel {
 		if (!ppt.butCustIconFont.length) ppt.butCustIconFont = 'Segoe UI Symbol';
 		ui.setSbar();
 		on_colours_changed();
+		if (ui.col.counts) panel.colMarker = true;
+		if (ppt.themed && ppt.theme) {
+			const themed_image = `${fb.ProfilePath}settings\\themed\\themed_image.bmp`;	
+			if ($.file(themed_image)) sync.image(gdi.Image(themed_image));
+		}
 		this.setRootName();
 		but.setSbarIcon();
 		pop.setValues();
-		pop.inlineRoot = ppt.rootNode && ppt.inlineRoot;
+		pop.inlineRoot = ppt.rootNode && (ppt.inlineRoot || ppt.facetView);
 
 		ui.getFont();
 		this.on_size();
@@ -1179,7 +1253,7 @@ class Panel {
 		find.on_size();
 		pop.createImages();
 
-		if (ppt.highLightNowplaying) {
+		if (ppt.highLightNowplaying || ppt.nowPlayingSidemarker) {
 			pop.getNowplaying();
 			pop.nowPlayingShow()
 		}

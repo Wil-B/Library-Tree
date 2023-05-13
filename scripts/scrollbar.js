@@ -107,7 +107,7 @@ class Scrollbar {
 		}, 16);
 
 		this.hideDebounce = $.debounce(() => {
-			if ((ppt.countsRight || ppt.itemShowDuration) && !panel.imgView && (!ppt.rootNode || pop.inlineRoot)) return;
+			if ((ppt.countsRight || ppt.itemShowStatistics) && !panel.imgView && !ppt.facetView && (!ppt.rootNode || pop.inlineRoot)) return;
 			if (this.scrollbar.zone) return;
 			this.active = false;
 			this.cur_active = this.active;
@@ -224,6 +224,19 @@ class Scrollbar {
 			if (ix < 0 || ix > pop.tree.length - 1) return;
 			let letter = panel.lines == 1 || !ppt.albumArtFlipLabels ? pop.tree[ix].grp : pop.tree[ix].lot;
 			if (panel.colMarker) letter = letter.replace(/@!#.*?@!#/g, '');
+			if (img.letter.no != 0) {
+				if (img.letter.albumArtYearAuto) {
+					let sub = letter.substring(0, 4);
+					if (/\d{4}/.test(sub)) letter = sub;
+					else {
+						sub = letter.substring(0, 6);
+						if (/(\[|\()\d{4}(\]|\))/.test(sub)) letter = sub;
+						else {
+							letter = letter.substring(0, img.letter.no);
+						}
+					}
+				} else letter = letter.substring(0, img.letter.no);
+			}
 			const letter_w = gr.CalcTextWidth(letter, ui.font.main) + img.letter.w;
 			const w1 = Math.min(letter_w, ui.w - img.panel.x - img.letter.w);
 			const w2 = Math.min(letter_w, ui.w - img.panel.x) + 1; 
@@ -369,12 +382,15 @@ class Scrollbar {
 		// panel info
 		if (this.vertical) this.narrow.x = this.x + this.w - $.clamp(ui.sbar.narrowWidth, 5, this.w);
 		else this.narrow.y = this.y + this.h - $.clamp(ui.sbar.narrowWidth, 5, this.h);
-		panel.tree.w = ui.w - Math.max(ppt.sbarShow && this.scrollable_lines > 0 ? !ppt.countsRight && !ppt.itemShowDuration ? ui.sbar.sp + ui.sz.sel : ppt.sbarShow == 2 ? ui.sbar.sp + ui.sz.margin : ppt.sbarShow == 1 ? (ui.w - this.narrow.x) + ui.sz.marginRight + Math.max(this.w - 11, 0) : ui.sz.sel : ui.sz.sel, ui.sz.margin);
+		panel.tree.w = ui.w - 
+		Math.max(ppt.sbarShow && this.scrollable_lines > 0 ? (!ppt.countsRight && !ppt.itemShowStatistics) || ppt.facetView ? ui.sbar.sp + ui.sz.sel : 
+		ppt.sbarShow == 2 ? ui.sbar.sp + ui.sz.margin : 
+		ppt.sbarShow == 1 ? (ui.w - this.narrow.x) + ui.sz.marginRight + Math.max(this.w - 11, 0) : ui.sz.sel : ui.sz.sel, ui.sz.margin);
 		pop.id = ui.id.tree + ppt.fullLineSelection + panel.tree.w + panel.imgView + ppt.albumArtLabelType + ppt.albumArtFlipLabels + ppt.albumArtFlowMode;
 		panel.tree.stripe.w = ppt.sbarShow == 2 && this.scrollable_lines > 0 ? ui.w - ui.sbar.sp - ui.sz.pad : ui.w;
 		panel.tree.sel.w = ppt.sbarShow == 2 && this.scrollable_lines > 0 ? ui.w - ui.sbar.sp - ui.sz.pad * 2 : ui.w - ui.sz.pad * 2;
 		this.max_scroll = this.scrollable_lines * this.row.h;
-		if (panel.imgView && this.vertical && this.row.h > ui.h - panel.search.h - (ui.style.topBarShow ? 0 : ui.sz.margin)) this.max_scroll -= this.row.h;
+		if (panel.imgView && this.vertical && this.row.h > img.panel.h) this.max_scroll -= this.row.h;
 		if (panel.imgView && !this.vertical && this.row.h > ui.w) this.max_scroll -= this.row.h;
 		if (ppt.sbarShow != 1) but.setScrollBtnsHide();
 	}
@@ -618,7 +634,7 @@ class Scrollbar {
 	tap(p_x, p_y) {
 		if (this.touch.amplitude) {
 			this.clock = 0;
-			this.scroll = this.delta;
+			// this.scroll = this.delta; // stopping correct scroll on expanding bottom node after touch event
 		}
 		this.touch.counter = 0;
 		this.initial.scr = this.scroll;
