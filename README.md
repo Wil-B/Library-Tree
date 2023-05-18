@@ -20,6 +20,9 @@ Feature rich library viewer and browser for [foobar2000](https://www.foobar2000.
 - [Spider Monkey Panel 1.5.2+](https://www.foobar2000.org/components)
 - IE8 or later
 - [FontAwesome](https://github.com/FortAwesome/Font-Awesome/blob/fa-4/fonts/fontawesome-webfont.ttf?raw=true)
+- Segoe UI Symbol
+    - should be present on most windows systems
+    - if you're on win7 and symbols don't render properly you can download an updated version that includes newer symbols [here](https://www.stephanpringle.com/corrupted-segoe-ui-symbol-font/)
 
 ### INSTALLATION
 Install as a package as follows.
