@@ -2216,6 +2216,8 @@ class Populate {
 	sort(data) {
 		if (!ppt.libSource && !panel.multiProcess) return;
 		this.specialCharSort(data);
+		// View By Folder Structure is already sorted
+		if (ppt.folderView) return;
 		data.sort((a, b) => this.collator.compare(a.srt[2], b.srt[2]) || (a.srt[3] && !b.srt[3] ? 1 : 0));
 	}
 
