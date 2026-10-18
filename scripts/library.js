@@ -243,12 +243,12 @@ class Library {
 		}
 	}
 
-	bInsert(item) {
+	bInsert(item, li) {
 		let min = 0;
-		let max = panel.list.Count;
+		let max = li.Count;
 		let index = Math.floor((min + max) / 2);
 		while (max > min) {
-			let tmp = new FbMetadbHandleList([item, panel.list[index]]);
+			let tmp = new FbMetadbHandleList([item, li[index]]);
 			panel.sort(tmp);
 			if (item.Compare(tmp[0])) max = index;
 			else min = index + 1;
@@ -264,7 +264,7 @@ class Library {
 				const tfo = FbTitleFormat(panel.view);
 				items = tfo.EvalWithMetadbs(insert);
 				insert.Convert().forEach((h, j) => {
-					i = this.bInsert(h);
+					i = this.bInsert(h, li);
 					this.format(items[j], panel.splitter, i, n);
 					li.Insert(i, h);
 				});
@@ -273,7 +273,7 @@ class Library {
 			case folder:
 				items = insert.GetLibraryRelativePaths();
 				insert.Convert().forEach((h, j) => {
-					i = this.bInsert(h);
+					i = this.bInsert(h, li);
 					this.format(items[j], '\\', i, n);
 					li.Insert(i, h);
 				});
